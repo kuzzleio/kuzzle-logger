@@ -1,0 +1,62 @@
+{
+  "name": "kuzzle-logger",
+  "version": "1.0.0",
+  "description": "Logger package for Kuzzle backend, JS SDK, and any related module (like gateways).",
+  "author": "The Kuzzle Team <support@kuzzle.io>",
+  "license": "Apache-2.0",
+  "homepage": "https://github.com/kuzzleio/kuzzle-logger",
+  "bugs": "https://github.com/kuzzleio/kuzzle-logger/issues",
+  "repository": "github:kuzzleio/kuzzle-logger",
+  "keywords": [
+    "kuzzle"
+  ],
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "test": "npm run test:lint && npm run test:functional",
+    "test:functional": "vitest",
+    "test:types": "tsc -b tsconfig.build.json --noEmit",
+    "test:lint": "eslint .",
+    "test:lint:fix": "eslint . --fix",
+    "clean": "rimraf dist",
+    "build": "npm run clean && tsc --build tsconfig.build.json",
+    "prepack": "npm run build"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.7.1",
+    "@commitlint/config-conventional": "^19.7.1",
+    "@types/node": "^22.13.1",
+    "cz-conventional-changelog": "^3.3.0",
+    "eslint": "^9.19.0",
+    "eslint-plugin-kuzzle": "^1.0.0-eslint-9.6",
+    "kuzzle-sdk": "^7.14.0",
+    "pino-elasticsearch": "*",
+    "pino-loki": "^2.5.0",
+    "pino-pretty": "*",
+    "pino-transport-ecs": "*",
+    "rimraf": "^6.0.1",
+    "semantic-release-config-kuzzle": "^1.1.2",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.5"
+  },
+  "dependencies": {
+    "pino": "^9.6.0"
+  },
+  "peerDependencies": {
+    "pino-elasticsearch": "^8.1.0",
+    "pino-pretty": "^13.0.0",
+    "pino-transport-ecs": "^1.0.1"
+  },
+  "peerDependenciesMeta": {
+    "pino-elasticsearch": {
+      "optional": true
+    },
+    "pino-pretty": {
+      "optional": true
+    },
+    "pino-transport-ecs": {
+      "optional": true
+    }
+  }
+}
