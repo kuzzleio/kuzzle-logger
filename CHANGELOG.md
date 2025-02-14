@@ -1,3 +1,10 @@
+## [1.0.0-dev.4](https://github.com/kuzzleio/kuzzle-logger/compare/v1.0.0-dev.3...v1.0.0-dev.4) (2025-02-14)
+
+
+### Bug Fixes
+
+* **logger:** fix handling of error objects ([fdd2f95](https://github.com/kuzzleio/kuzzle-logger/commit/fdd2f9561dfe87eb8cb6c9c064d4269d7f07e330))
+
 ## [1.0.0-dev.3](https://github.com/kuzzleio/kuzzle-logger/compare/v1.0.0-dev.2...v1.0.0-dev.3) (2025-02-14)
 
 
