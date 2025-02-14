@@ -60,5 +60,10 @@
     "pino-transport-ecs": {
       "optional": true
     }
-  }
+  },
+  "files": [
+    "dist/",
+    "LICENSE",
+    "README.md"
+  ]
 }
