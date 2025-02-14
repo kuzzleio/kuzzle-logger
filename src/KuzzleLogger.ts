@@ -1,5 +1,5 @@
 import { JSONObject } from 'kuzzle-sdk';
-import { ChildLoggerOptions, Logger, pino } from 'pino';
+import { Logger, pino } from 'pino';
 
 import { Presets } from './Presets';
 import { KuzzleLoggerConfig } from './types/KuzzleLoggerConfig';
@@ -160,10 +160,6 @@ export class KuzzleLogger {
       return;
     }
     this.pino.fatal(this.getMergingObject(), objOrMsg, ...args);
-  }
-
-  child(bindings: pino.Bindings, options?: ChildLoggerOptions): pino.Logger {
-    return this.pino.child(bindings, options);
   }
 
   private isErrorLike(err: { message?: any }): err is Error {
