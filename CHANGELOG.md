@@ -1,3 +1,10 @@
+## [1.0.0-dev.5](https://github.com/kuzzleio/kuzzle-logger/compare/v1.0.0-dev.4...v1.0.0-dev.5) (2025-02-14)
+
+
+### Features
+
+* **logger:** allow getting a pino child logger ([985c09c](https://github.com/kuzzleio/kuzzle-logger/commit/985c09cc58091026eac0a2f4b5c99806d4217dc6))
+
 ## [1.0.0-dev.4](https://github.com/kuzzleio/kuzzle-logger/compare/v1.0.0-dev.3...v1.0.0-dev.4) (2025-02-14)
 
 
