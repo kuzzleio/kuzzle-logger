@@ -1,4 +1,4 @@
-import pino from "pino";
+import pino from 'pino';
 
 export interface BasePresetOptions<TransportOptions = Record<string, any>>
   extends pino.TransportBaseOptions<TransportOptions> {
@@ -7,13 +7,12 @@ export interface BasePresetOptions<TransportOptions = Record<string, any>>
 
 export interface DefaultPresetOptions<TransportOptions = Record<string, any>>
   extends BasePresetOptions<TransportOptions> {
-  preset: "default";
+  preset: 'default';
 }
 
-export interface KuzzleElasticsearchPresetOptions<
-  TransportOptions = Record<string, any>,
-> extends BasePresetOptions<TransportOptions> {
-  preset: "kuzzle-elasticsearch";
+export interface KuzzleElasticsearchPresetOptions<TransportOptions = Record<string, any>>
+  extends BasePresetOptions<TransportOptions> {
+  preset: 'kuzzle-elasticsearch';
   presetOptions: {
     addKuzzleInfo?: boolean;
     esVersion?: number;

@@ -1,6 +1,6 @@
-import { pino } from "pino";
-import { TransportMultiOptionsWithPreset } from "./types/KuzzleLoggerConfig";
-import { TransportPresetOptions } from "./types/KuzzleLoggerPresets";
+import { pino } from 'pino';
+import { TransportMultiOptionsWithPreset } from './types/KuzzleLoggerConfig';
+import { TransportPresetOptions } from './types/KuzzleLoggerPresets';
 
 export abstract class Presets {
   static expandPresets(
@@ -9,21 +9,18 @@ export abstract class Presets {
       | TransportMultiOptionsWithPreset
       | pino.TransportPipelineOptions
       | TransportPresetOptions,
-  ):
-    | pino.TransportSingleOptions
-    | pino.TransportMultiOptions
-    | pino.TransportPipelineOptions {
+  ): pino.TransportSingleOptions | pino.TransportMultiOptions | pino.TransportPipelineOptions {
     // config is a TransportPresetOptions
-    if ("preset" in config) {
+    if ('preset' in config) {
       return this.getPresetConfig(config);
     }
 
     // config is a TransportMultiOptionsWithPreset
-    if ("targets" in config) {
+    if ('targets' in config) {
       return {
         ...config,
         targets: config.targets.map((t) => {
-          if ("preset" in t) {
+          if ('preset' in t) {
             return this.expandPresets(t);
           }
 
@@ -38,28 +35,25 @@ export abstract class Presets {
 
   static getPresetConfig(
     config: TransportPresetOptions,
-  ):
-    | pino.TransportSingleOptions
-    | pino.TransportMultiOptions
-    | pino.TransportPipelineOptions {
+  ): pino.TransportSingleOptions | pino.TransportMultiOptions | pino.TransportPipelineOptions {
     const preset = config.preset;
     switch (preset) {
-      case "default": {
-        const env = process.env.NODE_ENV ?? "development";
+      case 'default': {
+        const env = process.env.NODE_ENV ?? 'development';
 
-        if (env === "development") {
+        if (env === 'development') {
           return {
-            target: "pino-pretty",
+            target: 'pino-pretty',
           };
         }
 
         return {
           options: { destination: 1 },
-          target: "pino/file",
+          target: 'pino/file',
         };
       }
 
-      case "kuzzle-elasticsearch": {
+      case 'kuzzle-elasticsearch': {
         const addKuzzleInfo = config.presetOptions.addKuzzleInfo ?? true;
         const transportEcsOptions = addKuzzleInfo
           ? {
@@ -80,15 +74,15 @@ export abstract class Presets {
           pipeline: [
             {
               ...transportEcsOptions,
-              target: "pino-transport-ecs",
+              target: 'pino-transport-ecs',
             },
             {
               options: {
                 esVersion: config.presetOptions.esVersion ?? 8,
-                index: config.presetOptions.index ?? "&platform.logs",
+                index: config.presetOptions.index ?? '&platform.logs',
                 node: config.presetOptions.node,
               },
-              target: "pino-elasticsearch",
+              target: 'pino-elasticsearch',
             },
           ],
         };

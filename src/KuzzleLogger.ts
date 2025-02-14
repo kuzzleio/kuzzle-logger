@@ -1,8 +1,8 @@
-import { JSONObject } from "kuzzle-sdk";
-import { Logger, pino } from "pino";
+import { JSONObject } from 'kuzzle-sdk';
+import { Logger, pino } from 'pino';
 
-import { Presets } from "./Presets";
-import { KuzzleLoggerConfig } from "./types/KuzzleLoggerConfig";
+import { Presets } from './Presets';
+import { KuzzleLoggerConfig } from './types/KuzzleLoggerConfig';
 
 /**
  * The Logger class provides logging functionality for Kuzzle.
@@ -17,9 +17,7 @@ export class KuzzleLogger {
       this.getMergingObject = config.getMergingObject;
     }
 
-    const transportConfig = Presets.expandPresets(
-      config.transport ?? { preset: "default" },
-    );
+    const transportConfig = Presets.expandPresets(config.transport ?? { preset: 'default' });
 
     const transport = pino.transport(transportConfig);
 

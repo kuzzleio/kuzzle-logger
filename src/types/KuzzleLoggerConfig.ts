@@ -1,10 +1,9 @@
-import { JSONObject } from "kuzzle-sdk";
-import { pino } from "pino";
-import { TransportPresetOptions } from "./KuzzleLoggerPresets";
+import { JSONObject } from 'kuzzle-sdk';
+import { pino } from 'pino';
+import { TransportPresetOptions } from './KuzzleLoggerPresets';
 
-export interface TransportMultiOptionsWithPreset<
-  TransportOptions = Record<string, any>,
-> extends pino.TransportBaseOptions<TransportOptions> {
+export interface TransportMultiOptionsWithPreset<TransportOptions = Record<string, any>>
+  extends pino.TransportBaseOptions<TransportOptions> {
   targets: readonly (
     | pino.TransportTargetOptions<TransportOptions>
     | pino.TransportPipelineOptions<TransportOptions>
