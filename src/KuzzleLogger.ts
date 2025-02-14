@@ -162,6 +162,14 @@ export class KuzzleLogger {
     this.pino.fatal(this.getMergingObject(), objOrMsg, ...args);
   }
 
+  get level(): typeof this.pino.level {
+    return this.pino.level;
+  }
+
+  set level(level: typeof this.pino.level) {
+    this.pino.level = level;
+  }
+
   private isErrorLike(err: { message?: any }): err is Error {
     return err && typeof err.message === 'string';
   }
