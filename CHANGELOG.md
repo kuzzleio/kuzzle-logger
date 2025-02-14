@@ -1,3 +1,15 @@
+## [1.0.0-dev.6](https://github.com/kuzzleio/kuzzle-logger/compare/v1.0.0-dev.5...v1.0.0-dev.6) (2025-02-14)
+
+
+### Bug Fixes
+
+* **presets:** set pino-pretty minimum level to 'trace' ([70a1c42](https://github.com/kuzzleio/kuzzle-logger/commit/70a1c426aac11ba98c0c5de191361e244014f2f8))
+
+
+### Reverts
+
+* Revert "feat(logger): allow getting a pino child logger" ([60ac5d3](https://github.com/kuzzleio/kuzzle-logger/commit/60ac5d34ab3699ee854d35654643ac03c642d6f7))
+
 ## [1.0.0-dev.5](https://github.com/kuzzleio/kuzzle-logger/compare/v1.0.0-dev.4...v1.0.0-dev.5) (2025-02-14)
 
 
