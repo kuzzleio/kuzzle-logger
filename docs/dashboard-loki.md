@@ -1,3 +1,4 @@
+```json
 {
   "__inputs": [
     {
@@ -149,3 +150,4 @@
   "version": 3,
   "weekStart": ""
 }
+```
