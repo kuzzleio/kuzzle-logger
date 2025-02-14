@@ -1,3 +1,10 @@
+## [1.0.0-dev.3](https://github.com/kuzzleio/kuzzle-logger/compare/v1.0.0-dev.2...v1.0.0-dev.3) (2025-02-14)
+
+
+### Features
+
+* **logger:** allow passing additional objects and args to log functions ([213f770](https://github.com/kuzzleio/kuzzle-logger/commit/213f7703cfb1d7b43344b47fc1baf4ea6155295d))
+
 ## [1.0.0-dev.2](https://github.com/kuzzleio/kuzzle-logger/compare/v1.0.0-dev.1...v1.0.0-dev.2) (2025-02-14)
 
 
