@@ -36,9 +36,12 @@ export class KuzzleLogger {
   trace(msg: string, ...args: any[]): void;
   trace(objOrMsg: any, ...args: any[]): void {
     if (typeof objOrMsg === 'object') {
-      const additionalData = objOrMsg;
+      const additionalData = {
+        ...objOrMsg,
+        ...(this.isErrorLike(objOrMsg) ? {} : this.getMergingObject()),
+      };
       const message = args.shift();
-      this.pino.trace({ ...this.getMergingObject(), ...additionalData }, message, args);
+      this.pino.trace(additionalData, message, ...args);
       return;
     }
     this.pino.trace(this.getMergingObject(), objOrMsg, args);
@@ -56,9 +59,12 @@ export class KuzzleLogger {
   debug(msg: string, ...args: any[]): void;
   debug(objOrMsg: any, ...args: any[]): void {
     if (typeof objOrMsg === 'object') {
-      const additionalData = objOrMsg;
+      const additionalData = {
+        ...objOrMsg,
+        ...(this.isErrorLike(objOrMsg) ? {} : this.getMergingObject()),
+      };
       const message = args.shift();
-      this.pino.debug({ ...this.getMergingObject(), ...additionalData }, message, ...args);
+      this.pino.debug(additionalData, message, ...args);
       return;
     }
     this.pino.debug(this.getMergingObject(), objOrMsg, ...args);
@@ -76,9 +82,12 @@ export class KuzzleLogger {
   info(msg: string, ...args: any[]): void;
   info(objOrMsg: any, ...args: any[]): void {
     if (typeof objOrMsg === 'object') {
-      const additionalData = objOrMsg;
+      const additionalData = {
+        ...objOrMsg,
+        ...(this.isErrorLike(objOrMsg) ? {} : this.getMergingObject()),
+      };
       const message = args.shift();
-      this.pino.info({ ...this.getMergingObject(), ...additionalData }, message, ...args);
+      this.pino.info(additionalData, message, ...args);
       return;
     }
     this.pino.info(this.getMergingObject(), objOrMsg, ...args);
@@ -96,9 +105,12 @@ export class KuzzleLogger {
   warn(msg: string, ...args: any[]): void;
   warn(objOrMsg: any, ...args: any[]): void {
     if (typeof objOrMsg === 'object') {
-      const additionalData = objOrMsg;
+      const additionalData = {
+        ...objOrMsg,
+        ...(this.isErrorLike(objOrMsg) ? {} : this.getMergingObject()),
+      };
       const message = args.shift();
-      this.pino.warn({ ...this.getMergingObject(), ...additionalData }, message, ...args);
+      this.pino.warn(additionalData, message, ...args);
       return;
     }
     this.pino.warn(this.getMergingObject(), objOrMsg, ...args);
@@ -116,9 +128,12 @@ export class KuzzleLogger {
   error(msg: string, ...args: any[]): void;
   error(objOrMsg: any, ...args: any[]): void {
     if (typeof objOrMsg === 'object') {
-      const additionalData = objOrMsg;
+      const additionalData = {
+        ...objOrMsg,
+        ...(this.isErrorLike(objOrMsg) ? {} : this.getMergingObject()),
+      };
       const message = args.shift();
-      this.pino.error({ ...this.getMergingObject(), ...additionalData }, message, ...args);
+      this.pino.error(additionalData, message, ...args);
       return;
     }
     this.pino.error(this.getMergingObject(), objOrMsg, ...args);
@@ -136,11 +151,18 @@ export class KuzzleLogger {
   fatal(msg: string, ...args: any[]): void;
   fatal(objOrMsg: any, ...args: any[]): void {
     if (typeof objOrMsg === 'object') {
-      const additionalData = objOrMsg;
+      const additionalData = {
+        ...objOrMsg,
+        ...(this.isErrorLike(objOrMsg) ? {} : this.getMergingObject()),
+      };
       const message = args.shift();
-      this.pino.fatal({ ...this.getMergingObject(), ...additionalData }, message, ...args);
+      this.pino.fatal(additionalData, message, ...args);
       return;
     }
     this.pino.fatal(this.getMergingObject(), objOrMsg, ...args);
+  }
+
+  private isErrorLike(err: { message?: any }): err is Error {
+    return err && typeof err.message === 'string';
   }
 }
