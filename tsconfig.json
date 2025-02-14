@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "listEmittedFiles": true,
+    "module": "commonjs",
+    "target": "es2022",
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "baseUrl": ".",
+    "resolveJsonModule": true,
+    "outDir": "dist/",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "allowJs": true
+  },
+  "rootDir": "src/"
+}
