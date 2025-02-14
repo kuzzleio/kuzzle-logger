@@ -43,6 +43,9 @@ export abstract class Presets {
 
         if (env === 'development') {
           return {
+            options: {
+              minimumLevel: 'trace',
+            },
             target: 'pino-pretty',
           };
         }
