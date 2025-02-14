@@ -1,3 +1,10 @@
+## [1.0.0-dev.7](https://github.com/kuzzleio/kuzzle-logger/compare/v1.0.0-dev.6...v1.0.0-dev.7) (2025-02-14)
+
+
+### Features
+
+* **logger:** expose level getter and setter ([f9ad710](https://github.com/kuzzleio/kuzzle-logger/commit/f9ad710ecc5d2382f238b8c53b4b4d71c10ee239))
+
 ## [1.0.0-dev.6](https://github.com/kuzzleio/kuzzle-logger/compare/v1.0.0-dev.5...v1.0.0-dev.6) (2025-02-14)
 
 
