@@ -19,8 +19,8 @@ const logger = new KuzzleLogger({
   },
 });
 
-logger.warn('This is a warning message');
-logger.error('This is an error message');
+logger.warn({ foo: 'bar' }, 'This is a warning message');
+logger.error('This is an %s message', 'error');
 
 setInterval(() => {
   logger.info('This is an info message');

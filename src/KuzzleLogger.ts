@@ -27,58 +27,120 @@ export class KuzzleLogger {
   /**
    * Logs a message with the "trace" level.
    *
-   * @param message - The message to log.
+   * @param obj - The object to log.
+   * @param msg - An optional message to add to the logged object.
+   * @param args - Additional arguments to log.
    */
-  trace(message: string) {
-    this.pino.trace(this.getMergingObject(), message);
+  trace<T extends object>(obj: T, msg?: string, ...args: any[]): void;
+  trace(obj: unknown, msg?: string, ...args: any[]): void;
+  trace(msg: string, ...args: any[]): void;
+  trace(objOrMsg: any, ...args: any[]): void {
+    if (typeof objOrMsg === 'object') {
+      const additionalData = objOrMsg;
+      const message = args.shift();
+      this.pino.trace({ ...this.getMergingObject(), ...additionalData }, message, args);
+      return;
+    }
+    this.pino.trace(this.getMergingObject(), objOrMsg, args);
   }
 
   /**
    * Logs a message with the "debug" level.
    *
-   * @param message - The message to log.
+   * @param obj - The object to log.
+   * @param msg - An optional message to add to the logged object.
+   * @param args - Additional arguments to log.
    */
-  debug(message: string) {
-    this.pino.debug(this.getMergingObject(), message);
+  debug<T extends object>(obj: T, msg?: string, ...args: any[]): void;
+  debug(obj: unknown, msg?: string, ...args: any[]): void;
+  debug(msg: string, ...args: any[]): void;
+  debug(objOrMsg: any, ...args: any[]): void {
+    if (typeof objOrMsg === 'object') {
+      const additionalData = objOrMsg;
+      const message = args.shift();
+      this.pino.debug({ ...this.getMergingObject(), ...additionalData }, message, ...args);
+      return;
+    }
+    this.pino.debug(this.getMergingObject(), objOrMsg, ...args);
   }
 
   /**
    * Logs a message with the "info" level.
    *
-   * @param message - The message to log.
+   * @param obj - The object to log.
+   * @param msg - An optional message to add to the logged object.
+   * @param args - Additional arguments to log.
    */
-  info(message: string) {
-    this.pino.info(this.getMergingObject(), message);
+  info<T extends object>(obj: T, msg?: string, ...args: any[]): void;
+  info(obj: unknown, msg?: string, ...args: any[]): void;
+  info(msg: string, ...args: any[]): void;
+  info(objOrMsg: any, ...args: any[]): void {
+    if (typeof objOrMsg === 'object') {
+      const additionalData = objOrMsg;
+      const message = args.shift();
+      this.pino.info({ ...this.getMergingObject(), ...additionalData }, message, ...args);
+      return;
+    }
+    this.pino.info(this.getMergingObject(), objOrMsg, ...args);
   }
 
   /**
    * Logs a message with the "warn" level.
    *
-   * @param message - The message to log.
+   * @param obj - The object to log.
+   * @param msg - An optional message to add to the logged object.
+   * @param args - Additional arguments to log.
    */
-  warn(message: string) {
-    this.pino.warn(this.getMergingObject(), message);
+  warn<T extends object>(obj: T, msg?: string, ...args: any[]): void;
+  warn(obj: unknown, msg?: string, ...args: any[]): void;
+  warn(msg: string, ...args: any[]): void;
+  warn(objOrMsg: any, ...args: any[]): void {
+    if (typeof objOrMsg === 'object') {
+      const additionalData = objOrMsg;
+      const message = args.shift();
+      this.pino.warn({ ...this.getMergingObject(), ...additionalData }, message, ...args);
+      return;
+    }
+    this.pino.warn(this.getMergingObject(), objOrMsg, ...args);
   }
 
   /**
    * Logs a message with the "error" level.
    *
-   * @param message - The message to log.
+   * @param obj - The object to log.
+   * @param msg - An optional message to add to the logged object.
+   * @param args - Additional arguments to log.
    */
-  error(message: string | Error) {
-    if (message instanceof Error) {
-      this.pino.error(message);
-    } else {
-      this.pino.error(this.getMergingObject(), message);
+  error<T extends object>(obj: T, msg?: string, ...args: any[]): void;
+  error(obj: unknown, msg?: string, ...args: any[]): void;
+  error(msg: string, ...args: any[]): void;
+  error(objOrMsg: any, ...args: any[]): void {
+    if (typeof objOrMsg === 'object') {
+      const additionalData = objOrMsg;
+      const message = args.shift();
+      this.pino.error({ ...this.getMergingObject(), ...additionalData }, message, ...args);
+      return;
     }
+    this.pino.error(this.getMergingObject(), objOrMsg, ...args);
   }
 
   /**
    * Logs a message with the "fatal" level.
    *
-   * @param message - The message to log.
+   * @param obj - The object to log.
+   * @param msg - An optional message to add to the logged object.
+   * @param args - Additional arguments to log.
    */
-  fatal(message: string) {
-    this.pino.fatal(this.getMergingObject(), message);
+  fatal<T extends object>(obj: T, msg?: string, ...args: any[]): void;
+  fatal(obj: unknown, msg?: string, ...args: any[]): void;
+  fatal(msg: string, ...args: any[]): void;
+  fatal(objOrMsg: any, ...args: any[]): void {
+    if (typeof objOrMsg === 'object') {
+      const additionalData = objOrMsg;
+      const message = args.shift();
+      this.pino.fatal({ ...this.getMergingObject(), ...additionalData }, message, ...args);
+      return;
+    }
+    this.pino.fatal(this.getMergingObject(), objOrMsg, ...args);
   }
 }
