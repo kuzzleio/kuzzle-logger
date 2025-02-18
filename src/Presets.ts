@@ -38,7 +38,7 @@ export abstract class Presets {
   ): pino.TransportSingleOptions | pino.TransportMultiOptions | pino.TransportPipelineOptions {
     const preset = config.preset;
     switch (preset) {
-      case 'default': {
+      case 'stdout': {
         const env = process.env.NODE_ENV ?? 'development';
 
         if (env === 'development') {

@@ -17,7 +17,7 @@ export class KuzzleLogger {
       this.getMergingObject = config.getMergingObject;
     }
 
-    const transportConfig = Presets.expandPresets(config.transport ?? { preset: 'default' });
+    const transportConfig = Presets.expandPresets(config.transport ?? { preset: 'stdout' });
 
     const transport = pino.transport(transportConfig);
 

@@ -5,9 +5,9 @@ export interface BasePresetOptions<TransportOptions = Record<string, any>>
   preset: string;
 }
 
-export interface DefaultPresetOptions<TransportOptions = Record<string, any>>
+export interface StdoutPresetOptions<TransportOptions = Record<string, any>>
   extends BasePresetOptions<TransportOptions> {
-  preset: 'default';
+  preset: 'stdout';
 }
 
 export interface KuzzleElasticsearchPresetOptions<TransportOptions = Record<string, any>>
@@ -22,5 +22,5 @@ export interface KuzzleElasticsearchPresetOptions<TransportOptions = Record<stri
 }
 
 export type TransportPresetOptions<TransportOptions = Record<string, any>> =
-  | DefaultPresetOptions<TransportOptions>
+  | StdoutPresetOptions<TransportOptions>
   | KuzzleElasticsearchPresetOptions<TransportOptions>;

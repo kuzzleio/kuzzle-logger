@@ -6,7 +6,7 @@ const logger = new KuzzleLogger({
   transport: {
     targets: [
       {
-        preset: 'default',
+        preset: 'stdout',
       },
       {
         options: {
