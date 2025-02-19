@@ -21,6 +21,19 @@ export interface KuzzleElasticsearchPresetOptions<TransportOptions = Record<stri
   };
 }
 
+export interface LokiPresetOptions<TransportOptions = Record<string, any>>
+  extends BasePresetOptions<TransportOptions> {
+  preset: 'loki';
+  presetOptions: {
+    batching?: boolean;
+    headers?: Record<string, string>;
+    host: string;
+    interval?: number;
+    labels?: Record<string, string>;
+  };
+}
+
 export type TransportPresetOptions<TransportOptions = Record<string, any>> =
   | StdoutPresetOptions<TransportOptions>
-  | KuzzleElasticsearchPresetOptions<TransportOptions>;
+  | KuzzleElasticsearchPresetOptions<TransportOptions>
+  | LokiPresetOptions<TransportOptions>;

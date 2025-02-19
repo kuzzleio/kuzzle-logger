@@ -13,15 +13,18 @@ export class KuzzleLogger {
   private getMergingObject: () => JSONObject = () => ({});
 
   constructor(config: KuzzleLoggerConfig) {
-    if (config.getMergingObject) {
-      this.getMergingObject = config.getMergingObject;
+    const { transport, getMergingObject, ...globalSettings } = config;
+
+    if (getMergingObject) {
+      this.getMergingObject = getMergingObject;
     }
 
-    const transportConfig = Presets.expandPresets(config.transport ?? { preset: 'stdout' });
+    const transportConfig = Presets.expandPresets(
+      transport ?? { preset: 'stdout' },
+      globalSettings,
+    );
 
-    const transport = pino.transport(transportConfig);
-
-    this.pino = pino(transport);
+    this.pino = pino(pino.transport(transportConfig));
   }
 
   /**

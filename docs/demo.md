@@ -3,17 +3,17 @@ import { KuzzleLogger } from 'kuzzle-logger';
 
 const logger = new KuzzleLogger({
   getMergingObject: () => ({ foo: 'bar' }),
+  serviceName: 'my-service',
   transport: {
     targets: [
       {
         preset: 'stdout',
       },
       {
-        options: {
+        presetOptions: {
           host: 'http://localhost:3100',
-          labels: { app: 'gateway' },
         },
-        target: 'pino-loki',
+        preset: 'pino-loki',
       },
     ],
   },

@@ -1,27 +1,29 @@
 import { pino } from 'pino';
-import { TransportMultiOptionsWithPreset } from './types/KuzzleLoggerConfig';
+import { PinoTransportEcsOptions } from 'pino-transport-ecs/dist/types';
+import { GlobalSettings, TransportMultiOptionsWithPreset } from './types/KuzzleLoggerConfig';
 import { TransportPresetOptions } from './types/KuzzleLoggerPresets';
 
 export abstract class Presets {
   static expandPresets(
-    config:
+    transport:
       | pino.TransportSingleOptions
       | TransportMultiOptionsWithPreset
       | pino.TransportPipelineOptions
       | TransportPresetOptions,
+    globalSettings: GlobalSettings,
   ): pino.TransportSingleOptions | pino.TransportMultiOptions | pino.TransportPipelineOptions {
     // config is a TransportPresetOptions
-    if ('preset' in config) {
-      return this.getPresetConfig(config);
+    if ('preset' in transport) {
+      return this.getPresetConfig(transport, globalSettings);
     }
 
     // config is a TransportMultiOptionsWithPreset
-    if ('targets' in config) {
+    if ('targets' in transport) {
       return {
-        ...config,
-        targets: config.targets.map((t) => {
+        ...transport,
+        targets: transport.targets.map((t) => {
           if ('preset' in t) {
-            return this.expandPresets(t);
+            return this.expandPresets(t, globalSettings);
           }
 
           return t;
@@ -30,13 +32,14 @@ export abstract class Presets {
     }
 
     // config is a TransportSingleOptions or a TransportPipelineOptions
-    return config;
+    return transport;
   }
 
   static getPresetConfig(
-    config: TransportPresetOptions,
+    transport: TransportPresetOptions,
+    globalSettings: GlobalSettings,
   ): pino.TransportSingleOptions | pino.TransportMultiOptions | pino.TransportPipelineOptions {
-    const preset = config.preset;
+    const preset = transport.preset;
     switch (preset) {
       case 'stdout': {
         const env = process.env.NODE_ENV ?? 'development';
@@ -57,18 +60,14 @@ export abstract class Presets {
       }
 
       case 'kuzzle-elasticsearch': {
-        const addKuzzleInfo = config.presetOptions.addKuzzleInfo ?? true;
-        const transportEcsOptions = addKuzzleInfo
+        const addKuzzleInfo = transport.presetOptions.addKuzzleInfo ?? true;
+        const kuzzleInfo = addKuzzleInfo
           ? {
-              options: {
-                additionalBindings: {
-                  _kuzzle_info: {
-                    author: -1,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString(),
-                    updater: -1,
-                  },
-                },
+              _kuzzle_info: {
+                author: -1,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                updater: -1,
               },
             }
           : {};
@@ -76,18 +75,38 @@ export abstract class Presets {
         return {
           pipeline: [
             {
-              ...transportEcsOptions,
+              options: {
+                additionalBindings: {
+                  ...kuzzleInfo,
+                },
+                serviceName: globalSettings.serviceName,
+              } satisfies PinoTransportEcsOptions,
               target: 'pino-transport-ecs',
             },
             {
               options: {
-                esVersion: config.presetOptions.esVersion ?? 8,
-                index: config.presetOptions.index ?? '&platform.logs',
-                node: config.presetOptions.node,
+                esVersion: transport.presetOptions.esVersion ?? 8,
+                index: transport.presetOptions.index ?? '&platform.logs',
+                node: transport.presetOptions.node,
               },
               target: 'pino-elasticsearch',
             },
           ],
+        };
+      }
+
+      case 'loki': {
+        return {
+          options: {
+            batching: transport.presetOptions.batching ?? true,
+            headers: transport.presetOptions.headers ?? {},
+            host: transport.presetOptions.host,
+            labels: {
+              ...(transport.presetOptions.labels ?? {}),
+              service_name: globalSettings.serviceName,
+            },
+          },
+          target: 'pino-loki',
         };
       }
 
