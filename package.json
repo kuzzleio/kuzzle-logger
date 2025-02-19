@@ -1,6 +1,6 @@
 {
   "name": "kuzzle-logger",
-  "version": "1.0.0-dev.7",
+  "version": "1.0.0-dev.8",
   "description": "Logger package for Kuzzle backend, JS SDK, and any related module (like gateways).",
   "author": "The Kuzzle Team <support@kuzzle.io>",
   "license": "Apache-2.0",

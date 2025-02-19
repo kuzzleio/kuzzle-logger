@@ -1,3 +1,10 @@
+## [1.0.0-dev.8](https://github.com/kuzzleio/kuzzle-logger/compare/v1.0.0-dev.7...v1.0.0-dev.8) (2025-02-19)
+
+
+### Features
+
+* **logger:** add service name parameter, add loki preset ([46c63a7](https://github.com/kuzzleio/kuzzle-logger/commit/46c63a78f0d514db86a18012fd5847f8f4592f51))
+
 ## [1.0.0-dev.7](https://github.com/kuzzleio/kuzzle-logger/compare/v1.0.0-dev.6...v1.0.0-dev.7) (2025-02-14)
 
 
