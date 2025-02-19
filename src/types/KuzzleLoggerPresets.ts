@@ -3,6 +3,7 @@ import pino from 'pino';
 export interface BasePresetOptions<TransportOptions = Record<string, any>>
   extends pino.TransportBaseOptions<TransportOptions> {
   preset: string;
+  level?: pino.LevelWithSilentOrString;
 }
 
 export interface StdoutPresetOptions<TransportOptions = Record<string, any>>

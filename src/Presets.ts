@@ -54,6 +54,7 @@ export abstract class Presets {
         }
 
         return {
+          level: transport.level ?? 'info',
           options: { destination: 1 },
           target: 'pino/file',
         };
@@ -73,6 +74,7 @@ export abstract class Presets {
           : {};
 
         return {
+          level: transport.level ?? 'info',
           pipeline: [
             {
               options: {
@@ -97,10 +99,12 @@ export abstract class Presets {
 
       case 'loki': {
         return {
+          level: transport.level ?? 'info',
           options: {
             batching: transport.presetOptions.batching ?? true,
             headers: transport.presetOptions.headers ?? {},
             host: transport.presetOptions.host,
+            interval: transport.presetOptions.interval ?? 1000,
             labels: {
               ...(transport.presetOptions.labels ?? {}),
               service_name: globalSettings.serviceName,
