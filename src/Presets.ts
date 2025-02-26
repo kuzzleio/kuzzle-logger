@@ -66,8 +66,8 @@ export abstract class Presets {
           ? {
               _kuzzle_info: {
                 author: -1,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
+                createdAt: '{{ currentDate }}',
+                updatedAt: '{{ currentDate }}',
                 updater: -1,
               },
             }
