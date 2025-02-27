@@ -1,3 +1,10 @@
+## [1.0.0-dev.10](https://github.com/kuzzleio/kuzzle-logger/compare/v1.0.0-dev.9...v1.0.0-dev.10) (2025-02-27)
+
+
+### Bug Fixes
+
+* **presets:** fix kuzzle-elasticsearch preset timestamps not being dynamic ([ec6cd69](https://github.com/kuzzleio/kuzzle-logger/commit/ec6cd69012615d5c3071d957ed363f8213af3245))
+
 ## [1.0.0-dev.9](https://github.com/kuzzleio/kuzzle-logger/compare/v1.0.0-dev.8...v1.0.0-dev.9) (2025-02-19)
 
 
