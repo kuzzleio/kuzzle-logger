@@ -1,3 +1,22 @@
+## 1.0.0 (2025-02-27)
+
+
+### Features
+
+* **logger:** add service name parameter, add loki preset ([46c63a7](https://github.com/kuzzleio/kuzzle-logger/commit/46c63a78f0d514db86a18012fd5847f8f4592f51))
+* **logger:** allow passing additional objects and args to log functions ([213f770](https://github.com/kuzzleio/kuzzle-logger/commit/213f7703cfb1d7b43344b47fc1baf4ea6155295d))
+* **logger:** expose level getter and setter ([f9ad710](https://github.com/kuzzleio/kuzzle-logger/commit/f9ad710ecc5d2382f238b8c53b4b4d71c10ee239))
+* **logger:** initial implementation with all tooling ([b484c3d](https://github.com/kuzzleio/kuzzle-logger/commit/b484c3d4a83feff0bfd4349aa91f9f39bbc9100e))
+* **presets:** add level to presets ([eddd0c3](https://github.com/kuzzleio/kuzzle-logger/commit/eddd0c302cf3d9748ecbc6ec9942e41e8aff14d1))
+
+
+### Bug Fixes
+
+* **logger:** fix handling of error objects ([fdd2f95](https://github.com/kuzzleio/kuzzle-logger/commit/fdd2f9561dfe87eb8cb6c9c064d4269d7f07e330))
+* **npm:** remove extraneous files from released package ([623a02f](https://github.com/kuzzleio/kuzzle-logger/commit/623a02f6091fe7aaf69a3cfa79aa97bf7bc17c27))
+* **presets:** fix kuzzle-elasticsearch preset timestamps not being dynamic ([ec6cd69](https://github.com/kuzzleio/kuzzle-logger/commit/ec6cd69012615d5c3071d957ed363f8213af3245))
+* **presets:** set pino-pretty minimum level to 'trace' ([70a1c42](https://github.com/kuzzleio/kuzzle-logger/commit/70a1c426aac11ba98c0c5de191361e244014f2f8))
+
 ## [1.0.0-dev.10](https://github.com/kuzzleio/kuzzle-logger/compare/v1.0.0-dev.9...v1.0.0-dev.10) (2025-02-27)
 
 
