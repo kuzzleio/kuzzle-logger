@@ -104,7 +104,7 @@ export abstract class Presets {
             batching: transport.presetOptions.batching ?? true,
             headers: transport.presetOptions.headers ?? {},
             host: transport.presetOptions.host,
-            interval: transport.presetOptions.interval ?? 1000,
+            interval: transport.presetOptions.interval ?? 1,
             labels: {
               ...(transport.presetOptions.labels ?? {}),
               service_name: globalSettings.serviceName,
