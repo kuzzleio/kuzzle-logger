@@ -31,6 +31,7 @@ export interface LokiPresetOptions<TransportOptions = Record<string, any>>
     host: string;
     interval?: number;
     labels?: Record<string, string>;
+    levelMap?: Record<number, string>;
   };
 }
 

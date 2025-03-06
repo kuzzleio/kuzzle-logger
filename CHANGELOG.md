@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/kuzzleio/kuzzle-logger/compare/v1.0.0...v1.0.1) (2025-03-04)
+
+
+### Bug Fixes
+
+* **presets:** fix default interval value for loki preset ([7645cb8](https://github.com/kuzzleio/kuzzle-logger/commit/7645cb8bd91fe9099282dad0cbee660e4e701dae))
+
 ## [1.0.1-dev.1](https://github.com/kuzzleio/kuzzle-logger/compare/v1.0.0...v1.0.1-dev.1) (2025-03-04)
 
 
