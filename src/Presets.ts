@@ -46,6 +46,7 @@ export abstract class Presets {
 
         if (env === 'development') {
           return {
+            level: transport.level ?? 'info',
             options: {
               minimumLevel: 'trace',
             },
