@@ -165,6 +165,17 @@ export class KuzzleLogger {
     this.pino.fatal(this.getMergingObject(), objOrMsg, ...args);
   }
 
+  async flush(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.pino.flush((err) => {
+        if (err) {
+          reject(err);
+        }
+        resolve();
+      });
+    });
+  }
+
   get level(): typeof this.pino.level {
     return this.pino.level;
   }
