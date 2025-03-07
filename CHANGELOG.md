@@ -1,3 +1,15 @@
+## [1.1.0-dev.1](https://github.com/kuzzleio/kuzzle-logger/compare/v1.0.1-dev.1...v1.1.0-dev.1) (2025-03-07)
+
+
+### Features
+
+* **logger:** add flush ([2125a1f](https://github.com/kuzzleio/kuzzle-logger/commit/2125a1f09053faba911bca10d5612e5e76d13716))
+
+
+### Bug Fixes
+
+* **presets:** add missing level in stdout preset ([197ab19](https://github.com/kuzzleio/kuzzle-logger/commit/197ab192f7ff2c1c4b89ec857c3785234c1d5515))
+
 ## [1.0.1-dev.1](https://github.com/kuzzleio/kuzzle-logger/compare/v1.0.0...v1.0.1-dev.1) (2025-03-04)
 
 
