@@ -8,12 +8,28 @@ import { KuzzleLoggerConfig } from './types/KuzzleLoggerConfig';
  * The Logger class provides logging functionality for Kuzzle.
  */
 export class KuzzleLogger {
-  private pino: Logger;
+  private _pino: Logger;
+
+  get level(): typeof this._pino.level {
+    return this._pino.level;
+  }
+
+  set level(level: typeof this._pino.level) {
+    this._pino.level = level;
+  }
+
+  get pino(): Logger {
+    return this._pino;
+  }
+
+  protected set pino(pinoInstance: Logger) {
+    this._pino = pinoInstance;
+  }
 
   private getMergingObject: () => JSONObject = () => ({});
 
   constructor(config: KuzzleLoggerConfig) {
-    const { transport, getMergingObject, ...globalSettings } = config;
+    const { transport, getMergingObject, skipPinoInstance, ...globalSettings } = config;
 
     if (getMergingObject) {
       this.getMergingObject = getMergingObject;
@@ -24,7 +40,9 @@ export class KuzzleLogger {
       globalSettings,
     );
 
-    this.pino = pino(pino.transport(transportConfig));
+    if (!skipPinoInstance) {
+      this._pino = pino(pino.transport(transportConfig));
+    }
   }
 
   /**
@@ -44,10 +62,10 @@ export class KuzzleLogger {
         ...(this.isErrorLike(objOrMsg) ? {} : this.getMergingObject()),
       };
       const message = args.shift();
-      this.pino.trace(additionalData, message, ...args);
+      this._pino.trace(additionalData, message, ...args);
       return;
     }
-    this.pino.trace(this.getMergingObject(), objOrMsg, args);
+    this._pino.trace(this.getMergingObject(), objOrMsg, args);
   }
 
   /**
@@ -67,10 +85,10 @@ export class KuzzleLogger {
         ...(this.isErrorLike(objOrMsg) ? {} : this.getMergingObject()),
       };
       const message = args.shift();
-      this.pino.debug(additionalData, message, ...args);
+      this._pino.debug(additionalData, message, ...args);
       return;
     }
-    this.pino.debug(this.getMergingObject(), objOrMsg, ...args);
+    this._pino.debug(this.getMergingObject(), objOrMsg, ...args);
   }
 
   /**
@@ -90,10 +108,10 @@ export class KuzzleLogger {
         ...(this.isErrorLike(objOrMsg) ? {} : this.getMergingObject()),
       };
       const message = args.shift();
-      this.pino.info(additionalData, message, ...args);
+      this._pino.info(additionalData, message, ...args);
       return;
     }
-    this.pino.info(this.getMergingObject(), objOrMsg, ...args);
+    this._pino.info(this.getMergingObject(), objOrMsg, ...args);
   }
 
   /**
@@ -113,10 +131,10 @@ export class KuzzleLogger {
         ...(this.isErrorLike(objOrMsg) ? {} : this.getMergingObject()),
       };
       const message = args.shift();
-      this.pino.warn(additionalData, message, ...args);
+      this._pino.warn(additionalData, message, ...args);
       return;
     }
-    this.pino.warn(this.getMergingObject(), objOrMsg, ...args);
+    this._pino.warn(this.getMergingObject(), objOrMsg, ...args);
   }
 
   /**
@@ -136,10 +154,10 @@ export class KuzzleLogger {
         ...(this.isErrorLike(objOrMsg) ? {} : this.getMergingObject()),
       };
       const message = args.shift();
-      this.pino.error(additionalData, message, ...args);
+      this._pino.error(additionalData, message, ...args);
       return;
     }
-    this.pino.error(this.getMergingObject(), objOrMsg, ...args);
+    this._pino.error(this.getMergingObject(), objOrMsg, ...args);
   }
 
   /**
@@ -159,18 +177,40 @@ export class KuzzleLogger {
         ...(this.isErrorLike(objOrMsg) ? {} : this.getMergingObject()),
       };
       const message = args.shift();
-      this.pino.fatal(additionalData, message, ...args);
+      this._pino.fatal(additionalData, message, ...args);
       return;
     }
-    this.pino.fatal(this.getMergingObject(), objOrMsg, ...args);
+    this._pino.fatal(this.getMergingObject(), objOrMsg, ...args);
   }
 
-  get level(): typeof this.pino.level {
-    return this.pino.level;
+  async flush(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this._pino.flush((err) => {
+        if (err) {
+          reject(err);
+        }
+        resolve();
+      });
+    });
   }
 
-  set level(level: typeof this.pino.level) {
-    this.pino.level = level;
+  child(namespace: string): KuzzleLogger {
+    const currentMergingObject = this.getMergingObject();
+    const newNamespace = currentMergingObject?.namespace
+      ? `${currentMergingObject.namespace}:${namespace}`
+      : namespace;
+
+    const childLogger = new KuzzleLogger({
+      getMergingObject: () => ({
+        ...currentMergingObject,
+        namespace: newNamespace,
+      }),
+      skipPinoInstance: true,
+    });
+
+    childLogger.pino = this.pino.child({});
+
+    return childLogger;
   }
 
   private isErrorLike(err: { message?: any }): err is Error {
