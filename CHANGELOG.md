@@ -1,3 +1,10 @@
+## [1.1.0-dev.2](https://github.com/kuzzleio/kuzzle-logger/compare/v1.1.0-dev.1...v1.1.0-dev.2) (2025-03-11)
+
+
+### Features
+
+* **logger:** add child logger creation ([d321b77](https://github.com/kuzzleio/kuzzle-logger/commit/d321b773fd19c40fb7e56f21cabd08e3b3e73ded))
+
 ## [1.1.0-dev.1](https://github.com/kuzzleio/kuzzle-logger/compare/v1.0.1-dev.1...v1.1.0-dev.1) (2025-03-07)
 
 
