@@ -1,3 +1,16 @@
+## [1.1.0](https://github.com/kuzzleio/kuzzle-logger/compare/v1.0.1...v1.1.0) (2025-03-11)
+
+
+### Features
+
+* **logger:** add child logger creation ([c71419e](https://github.com/kuzzleio/kuzzle-logger/commit/c71419e9cedde3a9bc93b4ee08376d8f7aa4d0c3))
+* **logger:** add flush ([bc500c7](https://github.com/kuzzleio/kuzzle-logger/commit/bc500c75b74f04fc95f9093a5c937b8b391ea39c))
+
+
+### Bug Fixes
+
+* **presets:** add missing level in stdout preset ([bbc7c2b](https://github.com/kuzzleio/kuzzle-logger/commit/bbc7c2b19b9db19b1d34d2997a8008f1901f60a2))
+
 ## [1.1.0-dev.2](https://github.com/kuzzleio/kuzzle-logger/compare/v1.1.0-dev.1...v1.1.0-dev.2) (2025-03-11)
 
 
