@@ -29,7 +29,7 @@ export class KuzzleLogger {
   private getMergingObject: () => JSONObject = () => ({});
 
   constructor(config: KuzzleLoggerConfig) {
-    const { transport, getMergingObject, skipPinoInstance, ...globalSettings } = config;
+    const { transport, getMergingObject, skipPinoInstance, level, ...globalSettings } = config;
 
     if (getMergingObject) {
       this.getMergingObject = getMergingObject;
@@ -41,7 +41,7 @@ export class KuzzleLogger {
     );
 
     if (!skipPinoInstance) {
-      this._pino = pino(pino.transport(transportConfig));
+      this._pino = pino({ level }, pino.transport(transportConfig));
     }
   }
 
