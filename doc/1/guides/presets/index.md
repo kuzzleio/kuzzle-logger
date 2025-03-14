@@ -1,3 +1,11 @@
+---
+code: false
+type: page
+title: Presets
+description: Presets
+order: 200
+---
+
 # Presets
 
 Kuzzle Logger comes with several built-in presets that provide pre-configured transport options for common use cases.

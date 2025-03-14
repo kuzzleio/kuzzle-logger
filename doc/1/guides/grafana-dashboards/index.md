@@ -1,3 +1,15 @@
+---
+code: false
+type: page
+title: Grafana dashboards
+description: Grafana dashboards
+order: 300
+---
+
+# Grafana Dashboards
+
+## Loki
+
 ```json
 {
   "__inputs": [

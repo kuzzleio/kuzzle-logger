@@ -1,3 +1,11 @@
+---
+code: false
+type: page
+title: Transport configuration
+description: Transport configuration
+order: 100
+---
+
 # Transport Configuration
 
 The Kuzzle Logger supports various transport configurations to determine how and where logs are written. You can use predefined presets or configure custom transports.
