@@ -1,7 +1,7 @@
 ---
 code: true
 type: page
-title: KuzzleLogger class
+title: KuzzleLogger
 description: Kuzzle Logger API - KuzzleLogger class
 order: 100
 ---
@@ -18,7 +18,7 @@ constructor(config: KuzzleLoggerConfig)
 
 ### Parameters
 
-- `config`: Configuration object (see [KuzzleLoggerConfig](./types/kuzzle-logger-config.md))
+- `config`: Configuration object (see [KuzzleLoggerConfig](/logger/2/api/types/kuzzle-logger-config))
 
 ## Properties
 

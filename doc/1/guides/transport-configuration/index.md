@@ -22,7 +22,7 @@ interface TransportPresetOptions {
 }
 ```
 
-See [Presets](./presets.md) for detailed preset configurations.
+See [Presets](/logger/1/guides/presets) for detailed preset configurations.
 
 ### 2. Multiple Transports
 

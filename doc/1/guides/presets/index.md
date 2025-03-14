@@ -73,7 +73,7 @@ Configures logging to Grafana Loki.
 }
 ```
 
-An example of Loki dashboard is available [here](./dashboard-loki.md).
+An example of Loki dashboard is available [here](/logger/1/guides/grafana-dashboards#Loki).
 
 ## Usage Examples
 

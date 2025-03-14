@@ -69,4 +69,4 @@ If true, skips the creation of a Pino instance. This is used internally for chil
 transport?: TransportConfig
 ```
 
-Transport configuration that determines how and where logs are written. See [TransportConfig](./transport-config.md) for details.
+Transport configuration that determines how and where logs are written. See [TransportConfig](/logger/2/api/types/transport-config) for details.
