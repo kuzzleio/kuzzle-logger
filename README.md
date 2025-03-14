@@ -48,7 +48,7 @@ We love contributions! If you'd like to contribute, please feel free to submit a
 
 If you have any questions or encounter issues, please:
 
-- Check our [documentation](docs/README.md)
+- Check our [documentation](doc/README.md)
 - Open an [issue](https://github.com/kuzzleio/kuzzle-logger/issues)
 - Contact us at support@kuzzle.io
 

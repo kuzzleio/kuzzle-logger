@@ -1,3 +1,11 @@
+---
+code: false
+type: root
+order: 0
+title: Kuzzle Logger
+description: Kuzzle Logger Documentation
+---
+
 # Kuzzle Logger Documentation
 
 The Kuzzle Logger is a powerful logging utility built on top of [Pino](https://github.com/pinojs/pino) that provides structured logging capabilities with multiple transport options and preset configurations.
