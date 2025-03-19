@@ -1,3 +1,15 @@
+## [1.2.0](https://github.com/kuzzleio/kuzzle-logger/compare/v1.1.0...v1.2.0) (2025-03-19)
+
+
+### Features
+
+* **logger:** add level to options ([15fa159](https://github.com/kuzzleio/kuzzle-logger/commit/15fa1593b950114cb108e1020087267a94842365))
+
+
+### Bug Fixes
+
+* **logger:** set default log level to info to avoid exception if undefined ([12c9da9](https://github.com/kuzzleio/kuzzle-logger/commit/12c9da97c07eb66262cdaf3deb0a08a51a8d1e73))
+
 ## [1.2.0-dev.2](https://github.com/kuzzleio/kuzzle-logger/compare/v1.2.0-dev.1...v1.2.0-dev.2) (2025-03-19)
 
 
