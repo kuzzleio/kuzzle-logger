@@ -3,7 +3,7 @@ code: false
 type: page
 title: Grafana dashboards
 description: Grafana dashboards
-order: 400
+order: 500
 ---
 
 # Grafana Dashboards
