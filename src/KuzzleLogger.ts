@@ -41,7 +41,7 @@ export class KuzzleLogger {
     );
 
     if (!skipPinoInstance) {
-      this._pino = pino({ level }, pino.transport(transportConfig));
+      this._pino = pino({ level: level ?? 'info' }, pino.transport(transportConfig));
     }
   }
 
