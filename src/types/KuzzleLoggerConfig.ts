@@ -15,6 +15,7 @@ export interface TransportMultiOptionsWithPreset<TransportOptions = Record<strin
 
 export type KuzzleLoggerConfig = {
   getMergingObject?: () => JSONObject;
+  level?: pino.LevelWithSilent;
   serviceName?: string;
   skipPinoInstance?: boolean;
   transport?:

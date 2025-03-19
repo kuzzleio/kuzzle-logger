@@ -102,19 +102,19 @@ jobs:
           SEMANTIC_RELEASE_SLACK_WEBHOOK: ${{ secrets.SEMANTIC_RELEASE_SLACK_WEBHOOK }}
         run: npx semantic-release
 
-  # documentation_deploy:
-  #   needs: [release]
-  #   name: Documentation - Deploy
-  #   if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/beta' || github.ref == 'refs/heads/1-dev') }}
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
+  documentation_deploy:
+    needs: [release]
+    name: Documentation - Deploy
+    if: ${{ github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/beta' || github.ref == 'refs/heads/1-dev') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-  #     - uses: convictional/trigger-workflow-and-wait@v1.6.5
-  #       with:
-  #         owner: kuzzleio
-  #         repo: documentation
-  #         github_token: ${{ secrets.ACCESS_TOKEN_CI }}
-  #         workflow_file_name: child_repo.workflow.yml
-  #         ref: ${{ github.ref_name == 'main' && 'main' || 'develop' }}
-  #         client_payload: '{"repo_name":"kuzzle-logger","branch":"${{ github.ref_name }}","version":"1"}'
+      - uses: convictional/trigger-workflow-and-wait@v1.6.5
+        with:
+          owner: kuzzleio
+          repo: documentation
+          github_token: ${{ secrets.ACCESS_TOKEN_CI }}
+          workflow_file_name: child_repo.workflow.yml
+          ref: ${{ github.ref_name == 'main' && 'main' || 'develop' }}
+          client_payload: '{"repo_name":"kuzzle-logger","branch":"${{ github.ref_name }}","version":"1"}'

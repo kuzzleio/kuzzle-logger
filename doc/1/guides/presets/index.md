@@ -1,3 +1,11 @@
+---
+code: false
+type: page
+title: Presets
+description: Presets
+order: 300
+---
+
 # Presets
 
 Kuzzle Logger comes with several built-in presets that provide pre-configured transport options for common use cases.
@@ -65,7 +73,7 @@ Configures logging to Grafana Loki.
 }
 ```
 
-An example of Loki dashboard is available [here](./dashboard-loki.md).
+An example of Loki dashboard is available [here](/logger/1/guides/grafana-dashboards#Loki).
 
 ## Usage Examples
 
