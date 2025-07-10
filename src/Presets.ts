@@ -127,9 +127,9 @@ export abstract class Presets {
         return {
           level: transport.level ?? 'info',
           options: {
+            append: transport.presetOptions.append ?? true,
             destination: transport.presetOptions.destination,
             mkdir: transport.presetOptions.mkdir ?? true,
-            append: transport.presetOptions.append ?? true,
           },
           target: 'pino/file',
         };

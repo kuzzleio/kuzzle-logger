@@ -39,9 +39,9 @@ export interface FilePresetOptions<TransportOptions = Record<string, any>>
   extends BasePresetOptions<TransportOptions> {
   preset: 'file';
   presetOptions: {
+    append?: boolean;
     destination: string | number;
     mkdir?: boolean;
-    append?: boolean;
   };
 }
 
