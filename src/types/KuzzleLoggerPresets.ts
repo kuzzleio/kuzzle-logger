@@ -35,7 +35,18 @@ export interface LokiPresetOptions<TransportOptions = Record<string, any>>
   };
 }
 
+export interface FilePresetOptions<TransportOptions = Record<string, any>>
+  extends BasePresetOptions<TransportOptions> {
+  preset: 'file';
+  presetOptions: {
+    destination: string | number;
+    mkdir?: boolean;
+    append?: boolean;
+  };
+}
+
 export type TransportPresetOptions<TransportOptions = Record<string, any>> =
   | StdoutPresetOptions<TransportOptions>
   | KuzzleElasticsearchPresetOptions<TransportOptions>
-  | LokiPresetOptions<TransportOptions>;
+  | LokiPresetOptions<TransportOptions>
+  | FilePresetOptions<TransportOptions>;
