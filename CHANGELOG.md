@@ -1,3 +1,15 @@
+## [1.3.0-dev.1](https://github.com/kuzzleio/kuzzle-logger/compare/v1.2.0...v1.3.0-dev.1) (2025-07-10)
+
+
+### Features
+
+* add file preset to log directly into a file or a file descriptor ([fa51b6e](https://github.com/kuzzleio/kuzzle-logger/commit/fa51b6e9148af8cbca0849588630ddee6c5ca4f2))
+
+
+### Bug Fixes
+
+* apply linting requested changes ([8927ef4](https://github.com/kuzzleio/kuzzle-logger/commit/8927ef4224a40eca373b7056f6c0a2e2e9baee27))
+
 ## [1.2.0](https://github.com/kuzzleio/kuzzle-logger/compare/v1.1.0...v1.2.0) (2025-03-19)
 
 
