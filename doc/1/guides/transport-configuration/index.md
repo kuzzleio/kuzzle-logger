@@ -16,7 +16,7 @@ The Kuzzle Logger supports various transport configurations to determine how and
 
 ```typescript
 interface TransportPresetOptions {
-  preset: 'stdout' | 'kuzzle-elasticsearch' | 'loki';
+  preset: 'stdout' | 'kuzzle-elasticsearch' | 'loki' | 'file';
   level?: string;
   presetOptions?: PresetSpecificOptions;
 }
@@ -65,6 +65,19 @@ interface TransportPipelineOptions {
 const logger = new KuzzleLogger({
   transport: {
     preset: 'stdout',
+  },
+});
+```
+
+### Using File Preset
+
+```typescript
+const logger = new KuzzleLogger({
+  transport: {
+    preset: 'file',
+    presetOptions: {
+      destination: '/var/log/my-app.log',
+    },
   },
 });
 ```

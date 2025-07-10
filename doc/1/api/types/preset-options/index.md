@@ -42,6 +42,25 @@ The default preset that outputs logs to the standard output.
   - Uses `pino/file` with destination to stdout
   - Default level is `info`
 
+### FilePresetOptions
+```typescript
+interface FilePresetOptions extends BasePresetOptions {
+  preset: 'file';
+  presetOptions: {
+    destination: string | number; // File path to write logs
+    mkdir?: boolean; // Whether to create directory if it doesn't exist (defaults to true)
+    append?: boolean; // Whether to append to file instead of overwriting (defaults to true)
+  };
+}
+```
+
+#### Properties
+
+- `destination`: File path where logs will be written (required). If a number is provided, it will be treated as a file descriptor (e.g., `1` for stdout and `2` for stderr).
+- `mkdir`: Whether to create the directory if it doesn't exist (defaults to true)
+- `append`: Whether to append to the file instead of overwriting (defaults to true)
+
+
 ### KuzzleElasticsearchPresetOptions
 
 ```typescript
@@ -100,6 +119,19 @@ Configures logging to Grafana Loki.
 const config = {
   preset: 'stdout',
   level: 'debug',
+};
+```
+
+### File Preset
+
+```typescript
+const config = {
+  preset: 'file',
+  presetOptions: {
+    destination: '/var/log/my-app.log',
+    mkdir: true, // Create directory if it doesn't exist
+    append: true, // Append to file instead of overwriting
+  },
 };
 ```
 
