@@ -123,6 +123,18 @@ export abstract class Presets {
         };
       }
 
+      case 'file': {
+        return {
+          level: transport.level ?? 'info',
+          options: {
+            append: transport.presetOptions.append ?? true,
+            destination: transport.presetOptions.destination,
+            mkdir: transport.presetOptions.mkdir ?? true,
+          },
+          target: 'pino/file',
+        };
+      }
+
       default: {
         throw new Error(`Unknown preset: ${preset}`);
       }
