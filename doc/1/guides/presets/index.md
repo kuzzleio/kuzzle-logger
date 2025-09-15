@@ -69,6 +69,8 @@ Configures logging to Grafana Loki.
     host: string;           // Required - Loki host URL
     interval?: number;      // Defaults to 1000
     labels?: Record<string, string>;  // Custom labels
+    levelMap?: Record<number, string>; // Custom log level mapping
+    propsToLabels?: string[]; // Properties to extract as labels from log entries
   };
 }
 ```
