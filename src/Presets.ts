@@ -118,6 +118,7 @@ export abstract class Presets {
               50: 'error',
               60: 'fatal',
             },
+            propsToLabels: transport.presetOptions.propsToLabels ?? [],
           },
           target: 'pino-loki',
         };

@@ -161,6 +161,7 @@ const config = {
     },
     batching: true,
     interval: 2000,
+    propsToLabels: ['nodeId', 'namespace'],
   },
 };
 ```
