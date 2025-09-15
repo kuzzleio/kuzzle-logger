@@ -1,3 +1,10 @@
+## [1.4.0](https://github.com/kuzzleio/kuzzle-logger/compare/v1.3.0...v1.4.0) (2025-09-15)
+
+
+### Features
+
+* **loki:** allow to use the propsToLabels option on loki preset ([84d2593](https://github.com/kuzzleio/kuzzle-logger/commit/84d25938c99fb1acaa7c4cec7c47786ad59d4acb))
+
 ## [1.3.0](https://github.com/kuzzleio/kuzzle-logger/compare/v1.2.0...v1.3.0) (2025-07-10)
 
 
