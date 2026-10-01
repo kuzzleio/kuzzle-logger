@@ -1,6 +1,7 @@
 import { Logger, pino } from 'pino';
 
 import { KuzzleLogger } from '../src/KuzzleLogger';
+import { errorSerializers } from '../src/serializeError';
 import { KuzzleLoggerConfig } from '../src/types/KuzzleLoggerConfig';
 
 export type LogLine = Record<string, any>;
@@ -35,8 +36,9 @@ export function createMemoryLogger(
   const logger = new KuzzleLogger({ ...config, skipPinoInstance: true });
 
   // The pino setter is protected: tests inject an in-memory pino instance.
+  // Same options as the ones set by the KuzzleLogger constructor.
   (logger as unknown as { pino: Logger }).pino = pino(
-    { level: config.level ?? 'info' },
+    { level: config.level ?? 'info', serializers: errorSerializers },
     destination,
   );
 
