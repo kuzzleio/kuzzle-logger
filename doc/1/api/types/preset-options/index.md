@@ -108,7 +108,7 @@ Configures logging to Grafana Loki.
 - `headers`: Custom HTTP headers to send with requests
 - `host`: Loki host URL (required)
 - `interval`: Batch sending interval in milliseconds (defaults to 1000)
-- `labels`: Custom labels to add to log entries
+- `labels`: Custom labels to add to log entries. The `service_name` label is set from `serviceName` when it is defined; a `service_name` provided here takes precedence
 - `levelMap`: Custom mapping of numeric levels to string names
 
 ## Examples
