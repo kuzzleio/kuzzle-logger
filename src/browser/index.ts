@@ -12,3 +12,9 @@ export type {
   BrowserLogsApp,
   BrowserLogsPayload,
 } from '../protocol/payload.js';
+export { KuzzleLogger } from './KuzzleLogger.js';
+export type {
+  BrowserKuzzleLoggerConfig,
+  BrowserLoggerLevel,
+  BrowserLogSender,
+} from './KuzzleLogger.js';

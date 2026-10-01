@@ -64,8 +64,11 @@ try {
       import assert from 'node:assert';
       import { KuzzleLogger } from 'kuzzle-logger';
       import { validateBatch } from 'kuzzle-logger/kuzzle';
-      import { PAYLOAD_VERSION } from 'kuzzle-logger/browser';
+      import { KuzzleLogger as BrowserLogger, PAYLOAD_VERSION } from 'kuzzle-logger/browser';
       assert.strictEqual(typeof KuzzleLogger, 'function');
+      const entries = [];
+      new BrowserLogger({ console: false, sender: { send: (entry) => entries.push(entry) } }).info('hi');
+      assert.strictEqual(entries[0].msg, 'hi');
       assert.strictEqual(typeof validateBatch, 'function');
       assert.strictEqual(PAYLOAD_VERSION, 1);
       `,
@@ -78,7 +81,9 @@ try {
       import { KuzzleLogger } from 'kuzzle-logger';
       import { KuzzleLogger as Legacy } from 'kuzzle-logger/dist';
       import { validateBatch, BatchValidationResult } from 'kuzzle-logger/kuzzle';
-      import { PAYLOAD_VERSION, BrowserLogsPayload } from 'kuzzle-logger/browser';
+      import { KuzzleLogger as BrowserLogger, PAYLOAD_VERSION, BrowserLogsPayload } from 'kuzzle-logger/browser';
+      const browserLogger: BrowserLogger = new BrowserLogger({ console: 'warn', level: 'debug' });
+      browserLogger.child('map').error(new Error('boom'), 'failed %s', 'x');
       const payload: BrowserLogsPayload = { entries: [{ level: 'error' }], version: PAYLOAD_VERSION };
       const result: BatchValidationResult = validateBatch(payload);
       export const used = [KuzzleLogger, Legacy, result];
