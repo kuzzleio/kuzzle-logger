@@ -62,6 +62,8 @@ export abstract class Presets {
       }
 
       case 'kuzzle-elasticsearch': {
+        this.assertRequiredOption(transport, 'node');
+
         const addKuzzleInfo = transport.presetOptions.addKuzzleInfo ?? true;
         const kuzzleInfo = addKuzzleInfo
           ? {
@@ -99,6 +101,8 @@ export abstract class Presets {
       }
 
       case 'loki': {
+        this.assertRequiredOption(transport, 'host');
+
         return {
           level: transport.level ?? 'info',
           options: {
@@ -107,8 +111,10 @@ export abstract class Presets {
             host: transport.presetOptions.host,
             interval: transport.presetOptions.interval ?? 1,
             labels: {
+              ...(globalSettings.serviceName !== undefined
+                ? { service_name: globalSettings.serviceName }
+                : {}),
               ...(transport.presetOptions.labels ?? {}),
-              service_name: globalSettings.serviceName,
             },
             levelMap: transport.presetOptions.levelMap ?? {
               10: 'trace',
@@ -125,6 +131,8 @@ export abstract class Presets {
       }
 
       case 'file': {
+        this.assertRequiredOption(transport, 'destination');
+
         return {
           level: transport.level ?? 'info',
           options: {
@@ -139,6 +147,19 @@ export abstract class Presets {
       default: {
         throw new Error(`Unknown preset: ${preset}`);
       }
+    }
+  }
+
+  private static assertRequiredOption(
+    transport: Exclude<TransportPresetOptions, { preset: 'stdout' }>,
+    option: string,
+  ): void {
+    const value = (transport.presetOptions as Record<string, unknown> | undefined)?.[option];
+
+    if (value === undefined || value === null) {
+      throw new Error(
+        `The "${transport.preset}" preset requires the "presetOptions.${option}" option`,
+      );
     }
   }
 }

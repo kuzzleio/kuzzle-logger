@@ -1,5 +1,5 @@
-import { JSONObject } from 'kuzzle-sdk';
 import { pino } from 'pino';
+import { JSONObject } from './JSONObject';
 import { TransportPresetOptions } from './KuzzleLoggerPresets';
 
 export interface TransportMultiOptionsWithPreset<TransportOptions = Record<string, any>>

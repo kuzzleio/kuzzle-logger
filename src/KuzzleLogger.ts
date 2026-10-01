@@ -1,8 +1,8 @@
-import { JSONObject } from 'kuzzle-sdk';
 import { Logger, pino } from 'pino';
 
 import { Presets } from './Presets';
 import { errorSerializers, isErrorLike } from './serializeError';
+import { JSONObject } from './types/JSONObject';
 import { KuzzleLoggerConfig } from './types/KuzzleLoggerConfig';
 
 /**
