@@ -174,17 +174,23 @@ export class KuzzleLogger {
     });
   }
 
+  /**
+   * Creates a child logger with the given namespace, appended to the parent's one.
+   * The parent's merging object is resolved on each log call, so per-call context
+   * (e.g. a requestId from AsyncLocalStorage) is kept.
+   */
   child(namespace: string): KuzzleLogger {
-    const currentMergingObject = this.getMergingObject();
-    const newNamespace = currentMergingObject?.namespace
-      ? `${currentMergingObject.namespace}:${namespace}`
-      : namespace;
-
     const childLogger = new KuzzleLogger({
-      getMergingObject: () => ({
-        ...currentMergingObject,
-        namespace: newNamespace,
-      }),
+      getMergingObject: () => {
+        const parentMergingObject = this.getMergingObject();
+
+        return {
+          ...parentMergingObject,
+          namespace: parentMergingObject?.namespace
+            ? `${parentMergingObject.namespace}:${namespace}`
+            : namespace,
+        };
+      },
       skipPinoInstance: true,
     });
 
