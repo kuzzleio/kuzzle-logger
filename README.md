@@ -32,6 +32,17 @@ logger.info('Hello, Kuzzle Logger!');
 logger.error('Something went wrong', { error: new Error('Oops!') });
 ```
 
+## Entry points
+
+| Import | Runs in | Format |
+|---|---|---|
+| `kuzzle-logger` | Node | CommonJS |
+| `kuzzle-logger/browser` | Browser | ESM |
+| `kuzzle-logger/kuzzle` | Node (Kuzzle application) | CommonJS |
+
+`kuzzle-logger/browser` and `kuzzle-logger/kuzzle` are the two halves of browser logging
+([ADR-0001](adr/0001-browser-logging.md)), and are still being built.
+
 ## Documentation
 
 For detailed information about using Kuzzle Logger, please refer to our documentation:

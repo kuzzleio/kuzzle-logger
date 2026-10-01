@@ -1,4 +1,4 @@
-import { BrowserLogEntry } from './payload';
+import { BrowserLogEntry } from './payload.js';
 
 /**
  * Returns a stable hash grouping occurrences of the same error (or message):

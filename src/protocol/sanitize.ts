@@ -1,4 +1,4 @@
-import { BrowserLogEntry } from './payload';
+import { BrowserLogEntry } from './payload.js';
 
 export type SanitizeOptions = {
   /**
