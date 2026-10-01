@@ -18,3 +18,12 @@ export type {
   BrowserLoggerLevel,
   BrowserLogSender,
 } from './KuzzleLogger.js';
+export { NonRetryableError, createBatchingSender } from './batchingSender.js';
+export type {
+  BatchTransport,
+  BatchingOptions,
+  BatchingSender,
+  TransportOptions,
+} from './batchingSender.js';
+export { createHttpSender, createKuzzleSender } from './senders.js';
+export type { HttpSenderOptions, KuzzleSdkLike, KuzzleSenderOptions } from './senders.js';
