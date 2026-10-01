@@ -1,4 +1,4 @@
-import { JSONObject } from '../types/JSONObject';
+import { JSONObject } from '../types/JSONObject.js';
 
 /**
  * Version of the browser logs wire format.

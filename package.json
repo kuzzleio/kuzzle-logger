@@ -13,18 +13,50 @@
   "type": "commonjs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./browser": {
+      "types": "./dist/esm/browser/index.d.ts",
+      "default": "./dist/esm/browser/index.js"
+    },
+    "./kuzzle": {
+      "types": "./dist/kuzzle/index.d.ts",
+      "default": "./dist/kuzzle/index.js"
+    },
+    "./dist": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./dist/*": "./dist/*",
+    "./package.json": "./package.json"
+  },
+  "typesVersions": {
+    "*": {
+      "browser": [
+        "dist/esm/browser/index.d.ts"
+      ],
+      "kuzzle": [
+        "dist/kuzzle/index.d.ts"
+      ]
+    }
+  },
+  "sideEffects": false,
   "engines": {
     "node": ">=20"
   },
   "scripts": {
     "test": "npm run test:lint && npm run test:functional",
     "test:functional": "vitest run",
-    "test:types": "tsc -b tsconfig.build.json --noEmit",
+    "test:types": "tsc -b tsconfig.build.json --noEmit && tsc -p tsconfig.browser.json --noEmit",
     "test:lint": "eslint .",
     "test:lint:fix": "eslint . --fix",
     "clean": "rimraf dist",
-    "build": "npm run clean && tsc --build tsconfig.build.json",
-    "prepack": "npm run build"
+    "build": "npm run clean && tsc --build tsconfig.build.json && tsc -p tsconfig.browser.json && node scripts/write-esm-package.mjs",
+    "prepack": "npm run build",
+    "test:smoke": "node test/smoke/run.mjs"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.7.1",
@@ -43,6 +75,7 @@
     "rimraf": "^6.0.1",
     "semantic-release-config-kuzzle": "^1.1.2",
     "typescript": "^5.7.3",
+    "vite": "^6.4.3",
     "vitest": "^3.0.5"
   },
   "dependencies": {

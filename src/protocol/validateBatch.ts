@@ -1,4 +1,4 @@
-import { JSONObject } from '../types/JSONObject';
+import { JSONObject } from '../types/JSONObject.js';
 import {
   BROWSER_LOG_LEVELS,
   BrowserLogEntry,
@@ -6,7 +6,7 @@ import {
   BrowserLogLevel,
   BrowserLogsApp,
   PAYLOAD_VERSION,
-} from './payload';
+} from './payload.js';
 
 export type BatchLimits = {
   /**
