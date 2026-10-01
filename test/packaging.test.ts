@@ -73,6 +73,8 @@ describe('packaging', () => {
   });
 
   it('only imports browser-safe modules from the browser entry', () => {
+    // Browser-safe modules outside src/browser, src/protocol and src/types
+    const allowed = new Set(['pino/browser.js', '../serializeError.js']);
     const forbidden: string[] = [];
 
     for (const dir of ['browser', 'protocol']) {
@@ -80,6 +82,10 @@ describe('packaging', () => {
         const content = readFileSync(file, 'utf8');
 
         for (const [, specifier] of content.matchAll(/from\s+'([^']+)'/g)) {
+          if (allowed.has(specifier)) {
+            continue;
+          }
+
           const local = specifier.startsWith('.');
           const fullySpecified = specifier.endsWith('.js');
           const outside =
