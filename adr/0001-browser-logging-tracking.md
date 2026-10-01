@@ -12,11 +12,11 @@ items that cannot be tracked here. Update it when a phase completes or the scope
 
 | Phase | Issue | Task | Blocked by | Status |
 |---|---|---|---|---|
-| 1. Prerequisites | [#21](https://github.com/kuzzleio/kuzzle-logger/issues/21) | Error instances lose message, stack and merging context | – | ⬜ Todo |
-| 1. Prerequisites | [#22](https://github.com/kuzzleio/kuzzle-logger/issues/22) | `child()` freezes the parent merging object | – | ⬜ Todo |
-| 1. Prerequisites | [#23](https://github.com/kuzzleio/kuzzle-logger/issues/23) | `trace(msg, ...args)` passes args as an array | – | ⬜ Todo |
-| 1. Prerequisites | [#24](https://github.com/kuzzleio/kuzzle-logger/issues/24) | Peer deps, public typings, preset options robustness | – | ⬜ Todo |
-| 1. Prerequisites | [#25](https://github.com/kuzzleio/kuzzle-logger/issues/25) | Functional test baseline | – | ⬜ Todo |
+| 1. Prerequisites | [#21](https://github.com/kuzzleio/kuzzle-logger/issues/21) | Error instances lose message, stack and merging context | – | 🟦 In progress ([PR #28](https://github.com/kuzzleio/kuzzle-logger/pull/28)) |
+| 1. Prerequisites | [#22](https://github.com/kuzzleio/kuzzle-logger/issues/22) | `child()` freezes the parent merging object | – | 🟦 In progress ([PR #29](https://github.com/kuzzleio/kuzzle-logger/pull/29)) |
+| 1. Prerequisites | [#23](https://github.com/kuzzleio/kuzzle-logger/issues/23) | `trace(msg, ...args)` passes args as an array | – | 🟦 In progress ([PR #30](https://github.com/kuzzleio/kuzzle-logger/pull/30)) |
+| 1. Prerequisites | [#24](https://github.com/kuzzleio/kuzzle-logger/issues/24) | Peer deps, public typings, preset options robustness | – | 🟦 In progress ([PR #31](https://github.com/kuzzleio/kuzzle-logger/pull/31)) |
+| 1. Prerequisites | [#25](https://github.com/kuzzleio/kuzzle-logger/issues/25) | Functional test baseline | – | 🟦 In progress ([PR #27](https://github.com/kuzzleio/kuzzle-logger/pull/27)) |
 | 2. Build | [#14](https://github.com/kuzzleio/kuzzle-logger/issues/14) | `browser` / `kuzzle` subpath exports, ESM browser build | #25 | ⬜ Todo |
 | 3. Browser | [#15](https://github.com/kuzzleio/kuzzle-logger/issues/15) | Browser `KuzzleLogger`, API parity, console mirroring | #14, #21 | ⬜ Todo |
 | 3. Browser | [#16](https://github.com/kuzzleio/kuzzle-logger/issues/16) | Batching transport, `kuzzle` and `http` senders | #15, #18 | ⬜ Todo |
