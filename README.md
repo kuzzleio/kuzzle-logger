@@ -41,7 +41,26 @@ logger.error('Something went wrong', { error: new Error('Oops!') });
 | `kuzzle-logger/kuzzle` | Node (Kuzzle application) | CommonJS |
 
 `kuzzle-logger/browser` and `kuzzle-logger/kuzzle` are the two halves of browser logging
-([ADR-0001](adr/0001-browser-logging.md)), and are still being built.
+([ADR-0001](adr/0001-browser-logging.md)): browser logs are sent to the application's
+Kuzzle backend, which forwards them with its own logger and transports.
+
+```javascript
+// Kuzzle application
+import { BadRequestError } from 'kuzzle';
+import { createBrowserLogsController } from 'kuzzle-logger/kuzzle';
+
+app.controller.register(
+  'browser-logs',
+  createBrowserLogsController(app.log, { badRequest: (message) => new BadRequestError(message) }),
+);
+
+// Frontend
+import { KuzzleLogger, createKuzzleSender } from 'kuzzle-logger/browser';
+
+const logger = new KuzzleLogger({ level: 'info', sender: createKuzzleSender(sdk) });
+
+logger.error(new Error('Failed to load assets'));
+```
 
 ## Documentation
 
