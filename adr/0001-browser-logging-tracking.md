@@ -17,12 +17,12 @@ items that cannot be tracked here. Update it when a phase completes or the scope
 | 1. Prerequisites | [#23](https://github.com/kuzzleio/kuzzle-logger/issues/23) | `trace(msg, ...args)` passes args as an array | – | ✅ Done ([PR #30](https://github.com/kuzzleio/kuzzle-logger/pull/30)) |
 | 1. Prerequisites | [#24](https://github.com/kuzzleio/kuzzle-logger/issues/24) | Peer deps, public typings, preset options robustness | – | ✅ Done ([PR #31](https://github.com/kuzzleio/kuzzle-logger/pull/31)) |
 | 1. Prerequisites | [#25](https://github.com/kuzzleio/kuzzle-logger/issues/25) | Functional test baseline | – | ✅ Done ([PR #27](https://github.com/kuzzleio/kuzzle-logger/pull/27)) |
-| 2. Build | [#14](https://github.com/kuzzleio/kuzzle-logger/issues/14) | `browser` / `kuzzle` subpath exports, ESM browser build | #25 | ⬜ Todo |
-| 3. Browser | [#15](https://github.com/kuzzleio/kuzzle-logger/issues/15) | Browser `KuzzleLogger`, API parity, console mirroring | #14, #21 | ⬜ Todo |
+| 2. Build | [#14](https://github.com/kuzzleio/kuzzle-logger/issues/14) | `browser` / `kuzzle` subpath exports, ESM browser build | #25 | ✅ Done ([PR #35](https://github.com/kuzzleio/kuzzle-logger/pull/35)) |
+| 3. Browser | [#15](https://github.com/kuzzleio/kuzzle-logger/issues/15) | Browser `KuzzleLogger`, API parity, console mirroring | #14, #21 | 🟦 In progress |
 | 3. Browser | [#16](https://github.com/kuzzleio/kuzzle-logger/issues/16) | Batching transport, `kuzzle` and `http` senders | #15, #18 | ⬜ Todo |
 | 3. Browser | [#17](https://github.com/kuzzleio/kuzzle-logger/issues/17) | Opt-in global capture and Vue error handler | #15 | ⬜ Todo |
-| 4. Ingestion | [#18](https://github.com/kuzzleio/kuzzle-logger/issues/18) | v1 payload schema, validation, sanitization, fingerprint | – | ⬜ Todo |
-| 4. Ingestion | [#19](https://github.com/kuzzleio/kuzzle-logger/issues/19) | `createBrowserLogsController` | #18, #21, #22 | ⬜ Todo |
+| 4. Ingestion | [#18](https://github.com/kuzzleio/kuzzle-logger/issues/18) | v1 payload schema, validation, sanitization, fingerprint | – | ✅ Done ([PR #34](https://github.com/kuzzleio/kuzzle-logger/pull/34)) |
+| 4. Ingestion | [#19](https://github.com/kuzzleio/kuzzle-logger/issues/19) | `createBrowserLogsController` | #18, #21, #22 | 🟦 In progress |
 | 5. Docs | [#20](https://github.com/kuzzleio/kuzzle-logger/issues/20) | Guides and Grafana queries | #16, #19 | ⬜ Todo |
 
 Status legend: ⬜ Todo · 🟦 In progress · ✅ Done · ⏸️ Blocked

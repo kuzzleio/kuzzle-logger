@@ -5,3 +5,4 @@
  * runtime, since "kuzzle" depends on this package.
  */
 export * from '../protocol';
+export * from './createBrowserLogsController';

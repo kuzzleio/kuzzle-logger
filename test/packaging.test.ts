@@ -34,7 +34,8 @@ describe('packaging', () => {
     const forbidden: string[] = [];
 
     for (const file of listSourceFiles(join(root, 'src'))) {
-      const content = readFileSync(file, 'utf8');
+      // Comments are ignored: JSDoc examples may import packages such as "kuzzle"
+      const content = readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '');
 
       for (const [, specifier] of content.matchAll(/from\s+'([^']+)'/g)) {
         if (
