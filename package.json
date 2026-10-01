@@ -13,9 +13,12 @@
   "type": "commonjs",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "test": "npm run test:lint && npm run test:functional",
-    "test:functional": "vitest",
+    "test:functional": "vitest run",
     "test:types": "tsc -b tsconfig.build.json --noEmit",
     "test:lint": "eslint .",
     "test:lint:fix": "eslint . --fix",
