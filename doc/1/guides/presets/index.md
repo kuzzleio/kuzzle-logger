@@ -67,15 +67,19 @@ Configures logging to Grafana Loki.
     batching?: boolean;      // Defaults to true
     headers?: Record<string, string>;  // Custom HTTP headers
     host: string;           // Required - Loki host URL
-    interval?: number;      // Defaults to 1000
-    labels?: Record<string, string>;  // Custom labels
+    interval?: number;      // Batching interval, in seconds. Defaults to 1
+    labels?: Record<string, string>;  // Custom labels, they take precedence over service_name
     levelMap?: Record<number, string>; // Custom log level mapping
     propsToLabels?: string[]; // Properties to extract as labels from log entries
   };
 }
 ```
 
-An example of Loki dashboard is available [here](/logger/1/guides/grafana-dashboards#Loki).
+The `service_name` label is set from `serviceName` when it is defined, unless `labels.service_name` is provided.
+
+The `kuzzle-elasticsearch` (`node`), `loki` (`host`) and `file` (`destination`) presets throw an explicit error when their required option is missing.
+
+An example of Loki dashboard is available [here](/modules/logger/1/guides/grafana-dashboards#loki-dashboard).
 
 ## Usage Examples
 

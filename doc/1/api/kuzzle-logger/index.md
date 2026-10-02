@@ -18,7 +18,7 @@ constructor(config: KuzzleLoggerConfig)
 
 ### Parameters
 
-- `config`: Configuration object (see [KuzzleLoggerConfig](/logger/2/api/types/kuzzle-logger-config))
+- `config`: Configuration object (see [KuzzleLoggerConfig](/modules/logger/1/api/types/kuzzle-logger-config))
 
 ## Properties
 

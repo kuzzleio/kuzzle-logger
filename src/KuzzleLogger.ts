@@ -1,7 +1,8 @@
-import { JSONObject } from 'kuzzle-sdk';
 import { Logger, pino } from 'pino';
 
 import { Presets } from './Presets';
+import { errorSerializers, isErrorLike } from './serializeError';
+import { JSONObject } from './types/JSONObject';
 import { KuzzleLoggerConfig } from './types/KuzzleLoggerConfig';
 
 /**
@@ -41,7 +42,10 @@ export class KuzzleLogger {
     );
 
     if (!skipPinoInstance) {
-      this._pino = pino({ level: level ?? 'info' }, pino.transport(transportConfig));
+      this._pino = pino(
+        { level: level ?? 'info', serializers: errorSerializers },
+        pino.transport(transportConfig),
+      );
     }
   }
 
@@ -56,16 +60,7 @@ export class KuzzleLogger {
   trace(obj: unknown, msg?: string, ...args: any[]): void;
   trace(msg: string, ...args: any[]): void;
   trace(objOrMsg: any, ...args: any[]): void {
-    if (typeof objOrMsg === 'object') {
-      const additionalData = {
-        ...objOrMsg,
-        ...(this.isErrorLike(objOrMsg) ? {} : this.getMergingObject()),
-      };
-      const message = args.shift();
-      this._pino.trace(additionalData, message, ...args);
-      return;
-    }
-    this._pino.trace(this.getMergingObject(), objOrMsg, args);
+    this.log('trace', objOrMsg, args);
   }
 
   /**
@@ -79,16 +74,7 @@ export class KuzzleLogger {
   debug(obj: unknown, msg?: string, ...args: any[]): void;
   debug(msg: string, ...args: any[]): void;
   debug(objOrMsg: any, ...args: any[]): void {
-    if (typeof objOrMsg === 'object') {
-      const additionalData = {
-        ...objOrMsg,
-        ...(this.isErrorLike(objOrMsg) ? {} : this.getMergingObject()),
-      };
-      const message = args.shift();
-      this._pino.debug(additionalData, message, ...args);
-      return;
-    }
-    this._pino.debug(this.getMergingObject(), objOrMsg, ...args);
+    this.log('debug', objOrMsg, args);
   }
 
   /**
@@ -102,16 +88,7 @@ export class KuzzleLogger {
   info(obj: unknown, msg?: string, ...args: any[]): void;
   info(msg: string, ...args: any[]): void;
   info(objOrMsg: any, ...args: any[]): void {
-    if (typeof objOrMsg === 'object') {
-      const additionalData = {
-        ...objOrMsg,
-        ...(this.isErrorLike(objOrMsg) ? {} : this.getMergingObject()),
-      };
-      const message = args.shift();
-      this._pino.info(additionalData, message, ...args);
-      return;
-    }
-    this._pino.info(this.getMergingObject(), objOrMsg, ...args);
+    this.log('info', objOrMsg, args);
   }
 
   /**
@@ -125,16 +102,7 @@ export class KuzzleLogger {
   warn(obj: unknown, msg?: string, ...args: any[]): void;
   warn(msg: string, ...args: any[]): void;
   warn(objOrMsg: any, ...args: any[]): void {
-    if (typeof objOrMsg === 'object') {
-      const additionalData = {
-        ...objOrMsg,
-        ...(this.isErrorLike(objOrMsg) ? {} : this.getMergingObject()),
-      };
-      const message = args.shift();
-      this._pino.warn(additionalData, message, ...args);
-      return;
-    }
-    this._pino.warn(this.getMergingObject(), objOrMsg, ...args);
+    this.log('warn', objOrMsg, args);
   }
 
   /**
@@ -148,16 +116,7 @@ export class KuzzleLogger {
   error(obj: unknown, msg?: string, ...args: any[]): void;
   error(msg: string, ...args: any[]): void;
   error(objOrMsg: any, ...args: any[]): void {
-    if (typeof objOrMsg === 'object') {
-      const additionalData = {
-        ...objOrMsg,
-        ...(this.isErrorLike(objOrMsg) ? {} : this.getMergingObject()),
-      };
-      const message = args.shift();
-      this._pino.error(additionalData, message, ...args);
-      return;
-    }
-    this._pino.error(this.getMergingObject(), objOrMsg, ...args);
+    this.log('error', objOrMsg, args);
   }
 
   /**
@@ -171,16 +130,7 @@ export class KuzzleLogger {
   fatal(obj: unknown, msg?: string, ...args: any[]): void;
   fatal(msg: string, ...args: any[]): void;
   fatal(objOrMsg: any, ...args: any[]): void {
-    if (typeof objOrMsg === 'object') {
-      const additionalData = {
-        ...objOrMsg,
-        ...(this.isErrorLike(objOrMsg) ? {} : this.getMergingObject()),
-      };
-      const message = args.shift();
-      this._pino.fatal(additionalData, message, ...args);
-      return;
-    }
-    this._pino.fatal(this.getMergingObject(), objOrMsg, ...args);
+    this.log('fatal', objOrMsg, args);
   }
 
   async flush(): Promise<void> {
@@ -194,17 +144,23 @@ export class KuzzleLogger {
     });
   }
 
+  /**
+   * Creates a child logger with the given namespace, appended to the parent's one.
+   * The parent's merging object is resolved on each log call, so per-call context
+   * (e.g. a requestId from AsyncLocalStorage) is kept.
+   */
   child(namespace: string): KuzzleLogger {
-    const currentMergingObject = this.getMergingObject();
-    const newNamespace = currentMergingObject?.namespace
-      ? `${currentMergingObject.namespace}:${namespace}`
-      : namespace;
-
     const childLogger = new KuzzleLogger({
-      getMergingObject: () => ({
-        ...currentMergingObject,
-        namespace: newNamespace,
-      }),
+      getMergingObject: () => {
+        const parentMergingObject = this.getMergingObject();
+
+        return {
+          ...parentMergingObject,
+          namespace: parentMergingObject?.namespace
+            ? `${parentMergingObject.namespace}:${namespace}`
+            : namespace,
+        };
+      },
       skipPinoInstance: true,
     });
 
@@ -213,7 +169,28 @@ export class KuzzleLogger {
     return childLogger;
   }
 
-  private isErrorLike(err: { message?: any }): err is Error {
-    return err && typeof err.message === 'string';
+  /**
+   * Shared implementation of the level methods.
+   */
+  private log(level: pino.Level, objOrMsg: any, args: any[]): void {
+    if (typeof objOrMsg === 'object') {
+      const [additionalData, message] = this.toLogObject(objOrMsg, args.shift());
+      this._pino[level](additionalData, message, ...args);
+      return;
+    }
+
+    this._pino[level](this.getMergingObject(), objOrMsg, ...args);
+  }
+
+  /**
+   * Builds the object passed to pino. The merging object is always applied.
+   * An error is logged under the "err" key and, without a message, its message is used.
+   */
+  private toLogObject(obj: any, msg?: string): [object, string | undefined] {
+    if (isErrorLike(obj)) {
+      return [{ ...this.getMergingObject(), err: obj }, msg ?? obj.message];
+    }
+
+    return [{ ...obj, ...this.getMergingObject() }, msg];
   }
 }

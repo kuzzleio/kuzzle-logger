@@ -34,4 +34,12 @@ logger.error({ err: new Error('Something went wrong') }, 'Error occurred');
 logger.debug({ userId: '123', action: 'login' }, 'User login attempt');
 ```
 
+## Entry points
+
+| Import                  | Runs in         | Use it for                                                                                                                          |
+| ----------------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `kuzzle-logger`         | Node (CommonJS) | Backend services, gateways, the Kuzzle core                                                                                         |
+| `kuzzle-logger/browser` | Browser (ESM)   | Frontend applications: see [Browser logging](/modules/logger/1/guides/browser-logging)                                              |
+| `kuzzle-logger/kuzzle`  | Node (CommonJS) | Kuzzle applications receiving browser logs: see [Ingesting browser logs in Kuzzle](/modules/logger/1/guides/browser-logs-ingestion) |
+
 For more detailed information about the API and configuration options, please refer to the specific documentation sections linked in the table of contents.
