@@ -19,8 +19,8 @@ items that cannot be tracked here. Update it when a phase completes or the scope
 | 1. Prerequisites | [#25](https://github.com/kuzzleio/kuzzle-logger/issues/25) | Functional test baseline | – | ✅ Done ([PR #27](https://github.com/kuzzleio/kuzzle-logger/pull/27)) |
 | 2. Build | [#14](https://github.com/kuzzleio/kuzzle-logger/issues/14) | `browser` / `kuzzle` subpath exports, ESM browser build | #25 | ✅ Done ([PR #35](https://github.com/kuzzleio/kuzzle-logger/pull/35)) |
 | 3. Browser | [#15](https://github.com/kuzzleio/kuzzle-logger/issues/15) | Browser `KuzzleLogger`, API parity, console mirroring | #14, #21 | ✅ Done ([PR #37](https://github.com/kuzzleio/kuzzle-logger/pull/37)) |
-| 3. Browser | [#16](https://github.com/kuzzleio/kuzzle-logger/issues/16) | Batching transport, `kuzzle` and `http` senders | #15, #18 | 🟦 In progress |
-| 3. Browser | [#17](https://github.com/kuzzleio/kuzzle-logger/issues/17) | Opt-in global capture and Vue error handler | #15 | ⬜ Todo |
+| 3. Browser | [#16](https://github.com/kuzzleio/kuzzle-logger/issues/16) | Batching transport, `kuzzle` and `http` senders | #15, #18 | ✅ Done ([PR #38](https://github.com/kuzzleio/kuzzle-logger/pull/38)) |
+| 3. Browser | [#17](https://github.com/kuzzleio/kuzzle-logger/issues/17) | Opt-in global capture and Vue error handler | #15 | 🟦 In progress |
 | 4. Ingestion | [#18](https://github.com/kuzzleio/kuzzle-logger/issues/18) | v1 payload schema, validation, sanitization, fingerprint | – | ✅ Done ([PR #34](https://github.com/kuzzleio/kuzzle-logger/pull/34)) |
 | 4. Ingestion | [#19](https://github.com/kuzzleio/kuzzle-logger/issues/19) | `createBrowserLogsController` | #18, #21, #22 | ✅ Done ([PR #36](https://github.com/kuzzleio/kuzzle-logger/pull/36)) |
 | 5. Docs | [#20](https://github.com/kuzzleio/kuzzle-logger/issues/20) | Guides and Grafana queries | #16, #19 | ⬜ Todo |

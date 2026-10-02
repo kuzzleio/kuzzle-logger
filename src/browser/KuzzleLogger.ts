@@ -80,6 +80,9 @@ type Output = {
 
 const ENTRY = Symbol('kuzzle-logger.entry');
 
+// Set by withoutConsoleMirroring(): pino browser calls write() synchronously
+let consoleMirroringSuppressed = false;
+
 const LEVEL_VALUES: Record<BrowserLoggerLevel, number> = {
   debug: 20,
   error: 50,
@@ -274,11 +277,26 @@ export class KuzzleLogger {
   }
 }
 
+/**
+ * Runs fn with console mirroring disabled for every logger. Used by the capture
+ * helpers for errors that the browser, or the helper itself, already prints.
+ * Not exported from the browser entry point.
+ */
+export function withoutConsoleMirroring(fn: () => void): void {
+  consoleMirroringSuppressed = true;
+
+  try {
+    fn();
+  } finally {
+    consoleMirroringSuppressed = false;
+  }
+}
+
 function emit(output: Output, logObject: LogObject): void {
   const { level, msg, time } = logObject;
   const pending = logObject[ENTRY] ?? {};
 
-  if (LEVEL_VALUES[level] >= output.consoleThreshold) {
+  if (!consoleMirroringSuppressed && LEVEL_VALUES[level] >= output.consoleThreshold) {
     mirrorToConsole(level, msg, pending);
   }
 

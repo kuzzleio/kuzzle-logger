@@ -81,9 +81,13 @@ try {
       import { KuzzleLogger } from 'kuzzle-logger';
       import { KuzzleLogger as Legacy } from 'kuzzle-logger/dist';
       import { validateBatch, BatchValidationResult } from 'kuzzle-logger/kuzzle';
-      import { KuzzleLogger as BrowserLogger, PAYLOAD_VERSION, BrowserLogsPayload } from 'kuzzle-logger/browser';
+      import { KuzzleLogger as BrowserLogger, PAYLOAD_VERSION, BrowserLogsPayload, VueErrorHandler, captureGlobalErrors, createVueErrorHandler } from 'kuzzle-logger/browser';
       const browserLogger: BrowserLogger = new BrowserLogger({ console: 'warn', level: 'debug' });
       browserLogger.child('map').error(new Error('boom'), 'failed %s', 'x');
+      const stop: () => void = captureGlobalErrors(browserLogger, { dedupeInterval: 1000 });
+      const errorHandler: VueErrorHandler = createVueErrorHandler(browserLogger);
+      errorHandler(new Error('boom'), null, 'render function');
+      stop();
       const payload: BrowserLogsPayload = { entries: [{ level: 'error' }], version: PAYLOAD_VERSION };
       const result: BatchValidationResult = validateBatch(payload);
       export const used = [KuzzleLogger, Legacy, result];
