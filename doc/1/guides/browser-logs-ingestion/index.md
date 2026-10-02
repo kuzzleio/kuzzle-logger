@@ -131,7 +131,7 @@ Messages are normalized by replacing numbers, UUIDs, hexadecimal IDs, quoted str
 
 ### Namespaces
 
-The browser namespace is appended to the controller one: `dashboard:map` is logged under `browser:dashboard:map` (after the application logger namespace, if any).
+The browser namespace is appended to the controller one: `dashboard:map` is logged under `browser:dashboard:map`, after the namespace of the logger given to the controller. With the Kuzzle `app.log`, it is `kuzzle:app:browser:dashboard:map`.
 
 Since the namespace can be a transport label (for example with the Loki preset and `propsToLabels: ['namespace']`), a client could otherwise create any number of label values. The controller accepts at most `maxNamespaces` distinct namespaces per process. Entries with other namespaces are logged under `browser`, with their namespace in `clientNamespace`.
 

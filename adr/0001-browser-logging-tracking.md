@@ -23,7 +23,7 @@ items that cannot be tracked here. Update it when a phase completes or the scope
 | 3. Browser | [#17](https://github.com/kuzzleio/kuzzle-logger/issues/17) | Opt-in global capture and Vue error handler | #15 | ✅ Done ([PR #39](https://github.com/kuzzleio/kuzzle-logger/pull/39)) |
 | 4. Ingestion | [#18](https://github.com/kuzzleio/kuzzle-logger/issues/18) | v1 payload schema, validation, sanitization, fingerprint | – | ✅ Done ([PR #34](https://github.com/kuzzleio/kuzzle-logger/pull/34)) |
 | 4. Ingestion | [#19](https://github.com/kuzzleio/kuzzle-logger/issues/19) | `createBrowserLogsController` | #18, #21, #22 | ✅ Done ([PR #36](https://github.com/kuzzleio/kuzzle-logger/pull/36)) |
-| 5. Docs | [#20](https://github.com/kuzzleio/kuzzle-logger/issues/20) | Guides and Grafana queries | #16, #19 | 🟦 In progress |
+| 5. Docs | [#20](https://github.com/kuzzleio/kuzzle-logger/issues/20) | Guides and Grafana queries | #16, #19 | ✅ Done |
 
 Status legend: ⬜ Todo · 🟦 In progress · ✅ Done · ⏸️ Blocked
 
