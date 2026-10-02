@@ -1,3 +1,9 @@
+## [1.5.0-beta.2](https://github.com/kuzzleio/kuzzle-logger/compare/v1.5.0-beta.1...v1.5.0-beta.2) (2026-10-02)
+
+### Bug Fixes
+
+* **browser:** ignore the "undefined" file name Safari gives for console code ([0a54072](https://github.com/kuzzleio/kuzzle-logger/commit/0a540721e8556c37033696ab19c02515e9183416))
+
 ## [1.5.0-beta.1](https://github.com/kuzzleio/kuzzle-logger/compare/v1.4.0...v1.5.0-beta.1) (2026-10-02)
 
 ### Features
