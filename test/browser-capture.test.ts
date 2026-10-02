@@ -84,6 +84,15 @@ describe('captureGlobalErrors', () => {
     ]);
   });
 
+  it('ignores the "undefined" file name given by Safari for console code', () => {
+    const { entries, logger } = setup();
+
+    stop = captureGlobalErrors(logger);
+    window.dispatchEvent(errorEvent(new Error('from console'), { filename: 'undefined' }));
+
+    expect(entries[0].context).toEqual({ event: 'error' });
+  });
+
   it('logs unhandled rejections, with errors or other reasons', () => {
     const { entries, logger } = setup();
 

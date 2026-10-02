@@ -20,17 +20,19 @@ All browser logs:
 {service_name="my-app"} | json | source="browser"
 ```
 
+Browser namespaces follow the namespace of the backend logger: with the Kuzzle `app.log`, a `dashboard:map` entry is logged under `kuzzle:app:browser:dashboard:map`. The examples below match any prefix.
+
 If `namespace` is a stream label (`propsToLabels: ['namespace']`), filter on it in the stream selector, which is faster:
 
 ```
-{service_name="my-app", namespace=~"browser.*"}
+{service_name="my-app", namespace=~"(.+:)?browser(:.+)?"}
 ```
 
 Errors of a frontend application or namespace:
 
 ```
 {service_name="my-app", level=~"error|fatal"} | json | source="browser" | app_name="dashboard"
-{service_name="my-app", level=~"error|fatal"} | json | source="browser" | namespace=~"browser:dashboard:map.*"
+{service_name="my-app", level=~"error|fatal"} | json | source="browser" | namespace=~"(.+:)?browser:dashboard:map(:.+)?"
 ```
 
 When `namespace` is a stream label, `json` extracts the field as `namespace_extracted`: filter on the label in the stream selector instead.
