@@ -74,7 +74,8 @@
     "pino-pretty": "*",
     "pino-transport-ecs": "*",
     "rimraf": "^6.0.1",
-    "semantic-release-config-kuzzle": "^1.1.2",
+    "semantic-release": "25.0.3",
+    "semantic-release-config-kuzzle": "1.7.3",
     "typescript": "^5.7.3",
     "vite": "^6.4.3",
     "vitest": "^3.0.5"
