@@ -88,7 +88,11 @@ export function captureGlobalErrors(
 
   const onError = (event: Event) => {
     const { colno, error, filename, lineno, message } = event as ErrorEventLike;
-    const location = filename ? { column: colno, file: filename, line: lineno } : undefined;
+    // Safari gives "undefined" for code evaluated in the devtools console
+    const location =
+      filename && filename !== 'undefined'
+        ? { column: colno, file: filename, line: lineno }
+        : undefined;
     const text = isErrorLike(error) ? error.message : (message ?? String(error));
     const key = [
       'error',
