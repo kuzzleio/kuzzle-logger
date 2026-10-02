@@ -7,6 +7,10 @@ on:
       - '[0-9]+-dev'
   pull_request:
 
+# Read-only by default: the release job asks for the write permissions it needs
+permissions:
+  contents: read
+
 jobs:
   lint:
     name: Lint
