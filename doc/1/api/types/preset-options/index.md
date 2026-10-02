@@ -43,6 +43,7 @@ The default preset that outputs logs to the standard output.
   - Default level is `info`
 
 ### FilePresetOptions
+
 ```typescript
 interface FilePresetOptions extends BasePresetOptions {
   preset: 'file';
@@ -59,7 +60,6 @@ interface FilePresetOptions extends BasePresetOptions {
 - `destination`: File path where logs will be written (required). If a number is provided, it will be treated as a file descriptor (e.g., `1` for stdout and `2` for stderr).
 - `mkdir`: Whether to create the directory if it doesn't exist (defaults to true)
 - `append`: Whether to append to the file instead of overwriting (defaults to true)
-
 
 ### KuzzleElasticsearchPresetOptions
 
@@ -107,7 +107,7 @@ Configures logging to Grafana Loki.
 - `batching`: Whether to enable log batching (defaults to true)
 - `headers`: Custom HTTP headers to send with requests
 - `host`: Loki host URL (required)
-- `interval`: Batch sending interval in milliseconds (defaults to 1000)
+- `interval`: Batch sending interval in seconds (defaults to 1)
 - `labels`: Custom labels to add to log entries. The `service_name` label is set from `serviceName` when it is defined; a `service_name` provided here takes precedence
 - `levelMap`: Custom mapping of numeric levels to string names
 
@@ -160,7 +160,7 @@ const config = {
       environment: 'production',
     },
     batching: true,
-    interval: 2000,
+    interval: 2,
     propsToLabels: ['nodeId', 'namespace'],
   },
 };

@@ -29,7 +29,7 @@ const { KuzzleLogger } = require('kuzzle-logger');
 const logger = new KuzzleLogger();
 
 logger.info('Hello, Kuzzle Logger!');
-logger.error('Something went wrong', { error: new Error('Oops!') });
+logger.error({ err: new Error('Oops!') }, 'Something went wrong');
 ```
 
 ## Entry points
@@ -55,20 +55,34 @@ app.controller.register(
 );
 
 // Frontend
-import { KuzzleLogger, createKuzzleSender } from 'kuzzle-logger/browser';
+import {
+  KuzzleLogger,
+  captureGlobalErrors,
+  createKuzzleSender,
+  createVueErrorHandler,
+} from 'kuzzle-logger/browser';
 
 const logger = new KuzzleLogger({ level: 'info', sender: createKuzzleSender(sdk) });
 
 logger.error(new Error('Failed to load assets'));
+
+// Opt-in: uncaught errors, unhandled rejections and Vue errors
+captureGlobalErrors(logger.child('global'));
+app.config.errorHandler = createVueErrorHandler(logger.child('vue'));
 ```
 
 ## Documentation
 
-For detailed information about using Kuzzle Logger, please refer to our documentation:
+The documentation is published on [docs.kuzzle.io](https://docs.kuzzle.io/modules/logger/1/), from the [`doc/1`](doc/1) directory:
 
-- [API Reference](docs/api-reference.md)
-- [Transport Configuration](docs/transport-configuration.md)
-- [Logging Presets](docs/presets.md)
+- [Getting started](doc/1/guides/getting-started/index.md)
+- [Transport configuration](doc/1/guides/transport-configuration/index.md)
+- [Presets](doc/1/guides/presets/index.md)
+- [Child logger](doc/1/guides/child-logger/index.md)
+- [Browser logging](doc/1/guides/browser-logging/index.md)
+- [Ingesting browser logs in Kuzzle](doc/1/guides/browser-logs-ingestion/index.md)
+- [Grafana dashboards](doc/1/guides/grafana-dashboards/index.md)
+- [API reference](doc/1/api/kuzzle-logger/index.md)
 
 ## Contributing
 
@@ -78,7 +92,7 @@ We love contributions! If you'd like to contribute, please feel free to submit a
 
 If you have any questions or encounter issues, please:
 
-- Check our [documentation](doc/README.md)
+- Check our [documentation](https://docs.kuzzle.io/modules/logger/1/)
 - Open an [issue](https://github.com/kuzzleio/kuzzle-logger/issues)
 - Contact us at support@kuzzle.io
 

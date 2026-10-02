@@ -26,7 +26,7 @@ type TransportConfig =
 
 ### TransportPresetOptions
 
-Configures a preset transport. See [PresetOptions](/logger/2/api/types/preset-options) for details.
+Configures a preset transport. See [PresetOptions](/modules/logger/1/api/types/preset-options) for details.
 
 ### TransportMultiOptionsWithPreset
 
