@@ -1,6 +1,8 @@
 // Smoke tests of the built package (run `npm run build` first):
 // - each entry point is imported from Node (CJS and ESM),
-// - each entry point is type-checked with the bundler, node16 and node10 resolutions,
+// - each entry point is type-checked with the bundler, node16, nodenext and node10
+//   resolutions (node16 and nodenext catch a missing ".js" extension in the browser
+//   declarations),
 // - the browser entry is bundled by Vite, without Node built-ins, and tree-shaken.
 //
 // The bundle size is printed, and appended to the GitHub step summary in CI.
@@ -84,7 +86,7 @@ try {
     run(['esm.mjs']);
   });
 
-  step('Types: bundler, node16 and node10 resolutions', () => {
+  step('Types: bundler, node16, nodenext and node10 resolutions', () => {
     const imports = `
       import { KuzzleLogger } from 'kuzzle-logger';
       import { KuzzleLogger as Legacy } from 'kuzzle-logger/dist';
@@ -96,7 +98,10 @@ try {
       const browserLogger: BrowserLogger = new BrowserLogger({ console: 'warn', level: 'debug' });
       browserLogger.child('map').error(new Error('boom'), 'failed %s', 'x');
       const stop: () => void = captureGlobalErrors(browserLogger, { dedupeInterval: 1000 });
-      const errorHandler: VueErrorHandler = createVueErrorHandler(browserLogger);
+      const errorHandler: VueErrorHandler = createVueErrorHandler(browserLogger, {
+        dedupeInterval: 1000,
+        previous: (err: unknown, instance: unknown, info: string) => {},
+      });
       errorHandler(new Error('boom'), null, 'render function');
       stop();
       const payload: BrowserLogsPayload = { entries: [{ level: 'error' }], version: PAYLOAD_VERSION };
@@ -112,6 +117,7 @@ try {
 
     run([tsc, ...common, '--module', 'esnext', '--moduleResolution', 'bundler', 'types.ts']);
     run([tsc, ...common, '--module', 'node16', '--moduleResolution', 'node16', 'types.mts']);
+    run([tsc, ...common, '--module', 'nodenext', '--moduleResolution', 'nodenext', 'types.mts']);
     run([tsc, ...common, '--module', 'commonjs', '--moduleResolution', 'node10', 'types.ts']);
   });
 

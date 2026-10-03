@@ -78,6 +78,7 @@ mapLogger.warn('No asset to display');
 - `context` and errors (with their `cause` chain) are kept up to 5 levels deep: deeper objects and arrays are replaced with `[Object]` and `[Array]`.
 - Unlike `console.log`, extra arguments are only used for `%s`/`%d`/`%o` placeholders in the message: `logger.info('Loaded', data)` drops `data`. Write `logger.info({ data }, 'Loaded')`.
 - A child logger follows the level of its parent, until its own level is set (`child.level = 'debug'`).
+- `namespace` is a reserved key: a `namespace` field of the logged object (or of `getMergingObject`) sets the entry namespace and is not kept in `context`. When the logger has a namespace, the logged field is dropped. Use another name, e.g. `logger.info({ tenantNamespace }, 'Loaded')`.
 
 Errors are serialized with their name, message, stack, cause and custom properties. Each entry is sent with this shape (payload v1):
 
@@ -141,7 +142,7 @@ Both senders accept these options:
 | `maxRetries`    | `3`     | Retries of a failed batch before it is dropped.                                                                                                                                                                                              |
 | `retryDelay`    | `1000`  | First retry delay, in milliseconds. It doubles at each attempt, up to 60 seconds.                                                                                                                                                            |
 
-`await logger.flush()` sends the pending entries. `sender.close()` stops the timers and removes the page listeners, without sending the pending entries (call `flush()` first).
+`await logger.flush()` sends the pending entries now, even during a retry backoff. It resolves once the request is answered: if it fails, the entries stay buffered and are retried later. `sender.close()` stops the timers and removes the page listeners, without sending the pending entries (call `flush()` first).
 
 ## Capturing uncaught errors
 
@@ -160,11 +161,19 @@ const stop = captureGlobalErrors(logger.child('global'));
 - Each entry has an `event` context field (`error` or `unhandledrejection`), and the error `location` (`file`, `line`, `column`) for uncaught exceptions. A rejected value that is not an error is logged in the `reason` field.
 - Identical errors received within `dedupeInterval` milliseconds (5000 by default) are logged once, so an error thrown in a loop or a timer does not flood the backend.
 - The events are not cancelled: the browser still prints them to the console, and the logger does not print them a second time.
+- Errors are captured once per target: while a capture is active (e.g. after a hot module reload, or when both a platform and the application call it), later calls add no listener and return the same function, and the first logger keeps logging. A new call after `stop()` captures again.
 - Errors thrown by scripts from another origin only give `Script error.`, without a stack. Serve the scripts with CORS headers and the `crossorigin` attribute to get the details.
 
 ### Vue error handler
 
-`createVueErrorHandler(logger)` returns a handler for `app.config.errorHandler` (Vue 3) or `Vue.config.errorHandler` (Vue 2). It logs the error with the component name (`component`) and the Vue `info` string (`render function`, `setup function`, `watcher callback`...). It does not depend on `vue`.
+`createVueErrorHandler(logger, options?)` returns a handler for `app.config.errorHandler` (Vue 3) or `Vue.config.errorHandler` (Vue 2). It logs the error with the component name (`component`) and the Vue `info` string (`render function`, `setup function`, `watcher callback`...). It does not depend on `vue`.
+
+| Option           | Default | Description                                                                                                                                                                                              |
+| ---------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dedupeInterval` | `5000`  | Identical errors (same name, message, `info` and component) received within this delay, in milliseconds, are logged once, so an error thrown on each render does not flood the backend. `0` disables it. |
+| `previous`       | –       | Handler called after logging, with the same arguments: the handler set before, or the one of an error tracking tool. Errors it throws are ignored.                                                       |
+
+Deduplicated errors are still printed and passed to `previous`.
 
 ```typescript
 import { createApp } from 'vue';
@@ -175,13 +184,17 @@ import { logger } from './logger';
 
 const app = createApp(App);
 
-app.config.errorHandler = createVueErrorHandler(logger.child('vue'));
+app.config.errorHandler = createVueErrorHandler(logger.child('vue'), {
+  previous: app.config.errorHandler,
+});
 captureGlobalErrors(logger.child('global'));
 
 app.mount('#app');
 ```
 
 Vue stops printing errors once an error handler is set: the handler prints them with `console.error`, as Vue does in production, whatever the logger `console` option.
+
+Since Vue 3.4, production builds give `info` as a link (`https://vuejs.org/error-reference/#runtime-1`) instead of a string: the handler maps the known codes back to Vue's strings (`render function`), and keeps unknown ones as they are.
 
 ## Privacy
 
