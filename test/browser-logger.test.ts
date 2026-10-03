@@ -196,6 +196,16 @@ describe('browser KuzzleLogger', () => {
       ]);
     });
 
+    it('reserves the "namespace" context key for the entry namespace', () => {
+      const { entries, logger } = setup({ namespace: 'dashboard' });
+
+      logger.info({ namespace: 'tenant-a', tenant: 'a' }, 'hello');
+      setup().logger.info({ namespace: 'other' }, 'ignored');
+
+      expect(entries[0]).toMatchObject({ context: { tenant: 'a' }, namespace: 'dashboard' });
+      expect(entries[0].context).not.toHaveProperty('namespace');
+    });
+
     it('names children without a parent namespace', () => {
       const { entries, logger } = setup();
 
