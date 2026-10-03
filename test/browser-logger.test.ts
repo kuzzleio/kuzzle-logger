@@ -310,6 +310,30 @@ describe('browser KuzzleLogger', () => {
       });
     });
 
+    it('lets children follow the parent level until their own level is set', () => {
+      const { entries, logger } = setup();
+      const child = logger.child('map');
+      const grandChild = child.child('layer');
+
+      logger.level = 'debug';
+      child.debug('child debug');
+      grandChild.debug('grandchild debug');
+
+      logger.level = 'error';
+      child.info('child info, hidden');
+      expect(child.level).toBe('error');
+
+      child.level = 'trace';
+      logger.level = 'fatal';
+      grandChild.trace('grandchild trace, follows the child');
+
+      expect(entries.map((entry) => entry.msg)).toEqual([
+        'child debug',
+        'grandchild debug',
+        'grandchild trace, follows the child',
+      ]);
+    });
+
     it('lets children have their own level', () => {
       const { entries, logger } = setup();
       const child = logger.child('verbose');

@@ -94,4 +94,4 @@ Flushes any buffered logs to their destination.
 child(namespace: string): KuzzleLogger
 ```
 
-Creates a child logger with the specified namespace. The child logger inherits all settings from its parent and adds the namespace to the merging object.
+Creates a child logger with the specified namespace. The child logger inherits all settings from its parent and adds the namespace to the merging object. Its level follows the parent level, even when the parent level changes after the child is created, until a level is set on the child itself.

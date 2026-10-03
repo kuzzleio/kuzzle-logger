@@ -81,4 +81,33 @@ describe('KuzzleLogger.child()', () => {
 
     expect(calls).toBe(0);
   });
+
+  it('follows the parent level until its own level is set', () => {
+    const { logger, lines } = createMemoryLogger({ level: 'info' });
+    const child = logger.child('api');
+    const grandChild = child.child('auth');
+
+    logger.level = 'debug';
+    child.debug('child debug');
+    grandChild.debug('grandchild debug');
+
+    logger.level = 'error';
+    child.info('child info, hidden');
+    grandChild.warn('grandchild warn, hidden');
+    expect(child.level).toBe('error');
+
+    child.level = 'trace';
+    logger.level = 'fatal';
+    child.trace('child trace');
+    grandChild.trace('grandchild trace, follows the child');
+    logger.error('parent error, hidden');
+
+    expect(lines.map((line) => line.msg)).toEqual([
+      'child debug',
+      'grandchild debug',
+      'child trace',
+      'grandchild trace, follows the child',
+    ]);
+    expect(child.pino.level).toBe('trace');
+  });
 });

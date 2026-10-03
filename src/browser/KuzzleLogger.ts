@@ -121,11 +121,26 @@ export class KuzzleLogger {
 
   private getMergingObject: () => JSONObject = () => ({});
 
+  /**
+   * Set on children: their level follows the parent one until it is set on the child.
+   */
+  private parent: KuzzleLogger | null = null;
+
+  private ownLevel: BrowserLoggerLevel | null = null;
+
   get level(): BrowserLoggerLevel {
+    if (this.parent) {
+      return this.ownLevel ?? this.parent.level;
+    }
+
     return this._pino.level as BrowserLoggerLevel;
   }
 
   set level(level: BrowserLoggerLevel) {
+    if (this.parent) {
+      this.ownLevel = level;
+    }
+
     this._pino.level = level;
   }
 
@@ -219,12 +234,15 @@ export class KuzzleLogger {
   /**
    * Creates a child logger whose namespace is "<parent namespace>:<namespace>".
    * The parent merging object is evaluated on each log, not at creation time.
+   * The child level follows the parent one, until it is set on the child.
    */
   child(namespace: string): KuzzleLogger {
     const childLogger = Object.create(KuzzleLogger.prototype) as KuzzleLogger;
 
     childLogger._pino = this._pino.child({});
     childLogger.output = this.output;
+    childLogger.parent = this;
+    childLogger.ownLevel = null;
     childLogger.getMergingObject = () => {
       const parentMergingObject = this.getMergingObject();
 
@@ -241,6 +259,11 @@ export class KuzzleLogger {
 
   private log(level: BrowserLogLevel, objOrMsg: any, args: any[]): void {
     try {
+      // pino children copy the parent level when they are created: apply the current one
+      if (this.parent && this._pino.level !== this.level) {
+        this._pino.level = this.level;
+      }
+
       if (typeof objOrMsg === 'object' && objOrMsg !== null) {
         const message = args.shift();
 
