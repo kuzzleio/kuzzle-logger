@@ -102,7 +102,7 @@ Logging never throws, even when `getMergingObject` or the sender fails.
 
 Senders buffer entries and send them in batches:
 
-- when `maxBatchSize` entries are pending, or `flushInterval` after the first one;
+- when a batch is full (`maxBatchSize` entries or `maxBatchBytes` bytes), or `flushInterval` after the first entry;
 - immediately for `error` and `fatal` entries;
 - when the page is hidden or closed (`pagehide`, `visibilitychange`), with `fetch` `keepalive`: every pending batch at once, within the browser keepalive limit (64 KB in total). A batch still in flight is sent again, since the page may be gone before it completes: the backend can receive it twice.
 
@@ -131,14 +131,15 @@ Failed batches are retried with an exponential backoff. Rejected batches (4xx re
 
 Both senders accept these options:
 
-| Option          | Default | Description                                                                                                                 |
-| --------------- | ------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `app`           | –       | `{ name, version }` of the frontend, sent with each batch. Informational.                                                   |
-| `flushInterval` | `5000`  | Delay before sending a batch that is not full, in milliseconds.                                                             |
-| `maxBatchSize`  | `20`    | Maximum number of entries per batch. Keep it below the backend `limits.maxEntries` (100 by default).                        |
-| `maxBufferSize` | `500`   | Maximum number of entries kept in memory. The oldest entries are dropped first, and the backend logs how many were dropped. |
-| `maxRetries`    | `3`     | Retries of a failed batch before it is dropped.                                                                             |
-| `retryDelay`    | `1000`  | First retry delay, in milliseconds. It doubles at each attempt, up to 60 seconds.                                           |
+| Option          | Default | Description                                                                                                                                                                                                                                  |
+| --------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app`           | –       | `{ name, version }` of the frontend, sent with each batch. Informational.                                                                                                                                                                    |
+| `flushInterval` | `5000`  | Delay before sending a batch that is not full, in milliseconds.                                                                                                                                                                              |
+| `maxBatchBytes` | `60000` | Maximum size of a batch (JSON, in bytes). Keep it below the backend `limits.maxPayloadSize` (65536 by default). A larger entry is reduced to its level, time, namespace, message and error (truncated), with `context: { truncated: true }`. |
+| `maxBatchSize`  | `20`    | Maximum number of entries per batch. Keep it below the backend `limits.maxEntries` (100 by default).                                                                                                                                         |
+| `maxBufferSize` | `500`   | Maximum number of entries kept in memory. The oldest entries are dropped first, and the backend logs how many were dropped.                                                                                                                  |
+| `maxRetries`    | `3`     | Retries of a failed batch before it is dropped.                                                                                                                                                                                              |
+| `retryDelay`    | `1000`  | First retry delay, in milliseconds. It doubles at each attempt, up to 60 seconds.                                                                                                                                                            |
 
 `await logger.flush()` sends the pending entries. `sender.close()` stops the timers and removes the page listeners, without sending the pending entries (call `flush()` first).
 

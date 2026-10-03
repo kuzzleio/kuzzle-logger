@@ -4,6 +4,11 @@ import {
   BrowserLogsPayload,
   PAYLOAD_VERSION,
 } from '../protocol/payload.js';
+import {
+  DEFAULT_MAX_MESSAGE_LENGTH,
+  DEFAULT_MAX_STACK_LENGTH,
+  truncate,
+} from '../protocol/limits.js';
 import { BrowserLogSender } from './KuzzleLogger.js';
 
 export type TransportOptions = {
@@ -33,6 +38,14 @@ export type BatchingOptions = {
    * @default 5000
    */
   flushInterval?: number;
+  /**
+   * Maximum size of a batch, in bytes (JSON, UTF-8). Keep it below the backend
+   * "maxPayloadSize" limit. A larger single entry is reduced to its level, time,
+   * namespace, message and error (truncated), with "context: { truncated: true }",
+   * and dropped if it still does not fit.
+   * @default 60000
+   */
+  maxBatchBytes?: number;
   /**
    * Maximum number of entries per batch.
    * @default 20
@@ -96,7 +109,8 @@ type Batch = {
 
 /**
  * Creates a sender that buffers entries and sends them in batches (payload v1):
- * - when "maxBatchSize" entries are pending, or "flushInterval" after the first one,
+ * - when a batch is full ("maxBatchSize", "maxBatchBytes"), or "flushInterval" after
+ *   the first entry,
  * - immediately on "error" and "fatal" entries,
  * - with "keepalive" when the page is hidden ("pagehide", "visibilitychange"): all
  *   pending batches at once, including the one in flight (possible duplicates).
@@ -109,6 +123,7 @@ export function createBatchingSender(
   options: BatchingOptions = {},
 ): BatchingSender {
   const maxBatchSize = Math.max(1, options.maxBatchSize ?? 20);
+  const maxBatchBytes = options.maxBatchBytes ?? 60000;
   const maxBufferSize = Math.max(maxBatchSize, options.maxBufferSize ?? 500);
   const flushInterval = options.flushInterval ?? 5000;
   const maxRetries = options.maxRetries ?? 3;
@@ -167,8 +182,35 @@ export function createBatchingSender(
     return payload;
   };
 
+  // Largest envelope (app, dropped) of a payload: what is left is for the entries
+  const maxEntryBytes =
+    maxBatchBytes -
+    byteLength(JSON.stringify(toPayload({ dropped: 1e15, entries: [], handedOver: false })));
+
+  /**
+   * Number of entries, from the start of "entries", fitting in a batch of maxBytes.
+   * At least one: entries larger than a batch are reduced by send().
+   */
+  const batchLength = (entries: BrowserLogEntry[], maxBytes: number): number => {
+    let size = 0;
+    let count = 0;
+
+    while (count < Math.min(maxBatchSize, entries.length)) {
+      // +1 for the comma between entries
+      size += entrySize(entries[count]) + 1;
+
+      if (size > maxBytes && count > 0) {
+        break;
+      }
+
+      count++;
+    }
+
+    return count;
+  };
+
   const sendBatch = async (): Promise<'dropped' | 'retry' | 'sent'> => {
-    const entries = buffer.slice(0, maxBatchSize);
+    const entries = buffer.slice(0, batchLength(buffer, maxEntryBytes));
     const droppedBefore = dropped;
     const batch: Batch = { dropped, entries, handedOver: false };
 
@@ -306,20 +348,13 @@ export function createBatchingSender(
     let budget = KEEPALIVE_BUDGET;
 
     while (entries.length > 0 || droppedCount > 0) {
-      let count = Math.min(maxBatchSize, entries.length);
-      let batch: Batch = {
+      const count = batchLength(entries, Math.min(maxEntryBytes, budget));
+      const batch: Batch = {
         dropped: droppedCount,
         entries: entries.slice(0, count),
         handedOver: false,
       };
-      let size = byteLength(JSON.stringify(toPayload(batch)));
-
-      // Smaller batches until it fits in what is left of the budget
-      while (size > budget && count > 1) {
-        count = Math.ceil(count / 2);
-        batch = { ...batch, entries: entries.slice(0, count) };
-        size = byteLength(JSON.stringify(toPayload(batch)));
-      }
+      const size = byteLength(JSON.stringify(toPayload(batch)));
 
       if (size > budget) {
         break;
@@ -371,7 +406,18 @@ export function createBatchingSender(
         return;
       }
 
-      push([entry], false);
+      let fitting = entry;
+
+      if (entrySize(entry) > maxEntryBytes) {
+        fitting = reduce(entry);
+
+        if (entrySize(fitting) > maxEntryBytes) {
+          dropped++;
+          return;
+        }
+      }
+
+      push([fitting], false);
 
       if (retrying) {
         return;
@@ -384,13 +430,65 @@ export function createBatchingSender(
         return;
       }
 
-      if (!failing && (IMMEDIATE_LEVELS.has(entry.level) || buffer.length >= maxBatchSize)) {
+      const full =
+        buffer.length >= maxBatchSize || batchLength(buffer, maxEntryBytes) < buffer.length;
+
+      if (!failing && (IMMEDIATE_LEVELS.has(entry.level) || full)) {
         void flush();
       } else {
         schedule(flushInterval);
       }
     },
   };
+}
+
+const entrySizes = new WeakMap<BrowserLogEntry, number>();
+
+/**
+ * Size of an entry in a payload, in bytes. Cached: entries are immutable once sent.
+ */
+function entrySize(entry: BrowserLogEntry): number {
+  let size = entrySizes.get(entry);
+
+  if (size === undefined) {
+    size = byteLength(JSON.stringify(entry));
+    entrySizes.set(entry, size);
+  }
+
+  return size;
+}
+
+/**
+ * Reduces an entry too large for a batch to its level, time, namespace, message and
+ * error (truncated to the backend limits).
+ */
+function reduce(entry: BrowserLogEntry): BrowserLogEntry {
+  const reduced: BrowserLogEntry = { context: { truncated: true }, level: entry.level };
+
+  if (entry.time !== undefined) {
+    reduced.time = entry.time;
+  }
+
+  if (entry.namespace !== undefined) {
+    reduced.namespace = entry.namespace;
+  }
+
+  if (entry.msg !== undefined) {
+    reduced.msg = truncate(entry.msg, DEFAULT_MAX_MESSAGE_LENGTH);
+  }
+
+  if (entry.err) {
+    reduced.err = {
+      message: truncate(String(entry.err.message), DEFAULT_MAX_MESSAGE_LENGTH),
+      name: String(entry.err.name),
+    };
+
+    if (typeof entry.err.stack === 'string') {
+      reduced.err.stack = truncate(entry.err.stack, DEFAULT_MAX_STACK_LENGTH);
+    }
+  }
+
+  return reduced;
 }
 
 function byteLength(value: string): number {

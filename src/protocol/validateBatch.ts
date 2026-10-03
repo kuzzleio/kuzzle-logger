@@ -1,4 +1,5 @@
 import { JSONObject } from '../types/JSONObject.js';
+import { DEFAULT_MAX_MESSAGE_LENGTH, DEFAULT_MAX_STACK_LENGTH, truncate } from './limits.js';
 import {
   BROWSER_LOG_LEVELS,
   BrowserLogEntry,
@@ -48,9 +49,9 @@ export const DEFAULT_BATCH_LIMITS: Required<BatchLimits> = {
   levels: BROWSER_LOG_LEVELS,
   maxContextDepth: DEFAULT_MAX_DEPTH,
   maxEntries: 100,
-  maxMessageLength: 2048,
+  maxMessageLength: DEFAULT_MAX_MESSAGE_LENGTH,
   maxPayloadSize: 65536,
-  maxStackLength: 8192,
+  maxStackLength: DEFAULT_MAX_STACK_LENGTH,
 };
 
 export type RejectedEntry = {
@@ -74,8 +75,6 @@ export type BatchValidationResult =
       rejected: RejectedEntry[];
       valid: true;
     };
-
-const TRUNCATED_SUFFIX = '…[truncated]';
 
 /**
  * Keys that must never be copied, to prevent prototype pollution.
@@ -301,12 +300,4 @@ function serializedSize(value: unknown): number | null {
   } catch {
     return null;
   }
-}
-
-function truncate(value: string, maxLength: number): string {
-  if (value.length <= maxLength) {
-    return value;
-  }
-
-  return value.slice(0, Math.max(0, maxLength - TRUNCATED_SUFFIX.length)) + TRUNCATED_SUFFIX;
 }

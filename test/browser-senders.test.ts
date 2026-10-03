@@ -97,6 +97,98 @@ describe('createBatchingSender', () => {
     expect(calls.every(({ payload }) => payload.entries.length <= 2)).toBe(true);
   });
 
+  it('keeps an oversized entry from taking its batch down', async () => {
+    const { calls, transport } = recorder();
+    // The backend rejects payloads over maxPayloadSize as a whole
+    transport.mockImplementation(async (payload, { keepalive }) => {
+      calls.push({ keepalive, payload: structuredClone(payload) });
+
+      if (!validateBatch(payload).valid) {
+        throw new NonRetryableError('400');
+      }
+    });
+    sender = createBatchingSender(transport);
+
+    sender.send(info('a'));
+    sender.send({ context: { response: 'x'.repeat(70000) }, level: 'info', msg: 'b', time: 1 });
+    sender.send(info('c'));
+    await sender.flush();
+
+    expect(calls.map(({ payload }) => payload.dropped)).toEqual([undefined]);
+    expect(calls[0].payload.entries).toEqual([
+      info('a'),
+      { context: { truncated: true }, level: 'info', msg: 'b', time: 1 },
+      info('c'),
+    ]);
+  });
+
+  it('truncates the message and error of an oversized entry, or drops it', async () => {
+    const { calls, transport } = recorder();
+    sender = createBatchingSender(transport, { maxBatchBytes: 20000 });
+
+    sender.send({
+      err: {
+        cause: { big: 'x'.repeat(20000) },
+        message: 'm'.repeat(5000),
+        name: 'E',
+        stack: 's'.repeat(20000),
+      },
+      level: 'error',
+      msg: 'x'.repeat(5000),
+    });
+    await vi.advanceTimersByTimeAsync(0);
+
+    const [entry] = calls[0].payload.entries;
+
+    expect(entry.msg).toHaveLength(2048);
+    expect(entry.err).toEqual({
+      message: expect.stringMatching(/^m+…\[truncated\]$/),
+      name: 'E',
+      stack: expect.stringMatching(/^s+…\[truncated\]$/),
+    });
+    expect(entry.err?.stack).toHaveLength(8192);
+
+    sender.close();
+    sender = createBatchingSender(transport, { maxBatchBytes: 1000 });
+    sender.send({ level: 'error', msg: 'x'.repeat(5000) });
+    sender.send(info('next'));
+    await sender.flush();
+
+    expect(calls[1].payload).toMatchObject({ dropped: 1, entries: [info('next')] });
+  });
+
+  it('splits batches by size (maxBatchBytes)', async () => {
+    const { calls, transport } = recorder();
+    sender = createBatchingSender(transport, { maxBatchBytes: 1000 });
+    const entry = (msg: string) => info(msg + 'x'.repeat(250));
+
+    for (const msg of ['a', 'b', 'c', 'd', 'e']) {
+      sender.send(entry(msg));
+    }
+    await sender.flush();
+
+    expect(calls.map(({ payload }) => msgs(payload).map((msg) => msg?.[0]))).toEqual([
+      ['a', 'b', 'c'],
+      ['d', 'e'],
+    ]);
+    expect(calls.every(({ payload }) => JSON.stringify(payload).length <= 1000)).toBe(true);
+  });
+
+  it('sends as soon as maxBatchBytes are pending', async () => {
+    const { calls, transport } = recorder();
+    sender = createBatchingSender(transport, { maxBatchBytes: 1000 });
+
+    for (const msg of ['a', 'b', 'c', 'd']) {
+      sender.send(info(msg + 'x'.repeat(250)));
+    }
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(calls.map(({ payload }) => msgs(payload).map((msg) => msg?.[0]))).toEqual([
+      ['a', 'b', 'c'],
+      ['d'],
+    ]);
+  });
+
   it('drops the oldest entries when the buffer is full, and reports them', async () => {
     const { calls, transport } = recorder();
     sender = createBatchingSender(transport, { maxBatchSize: 3, maxBufferSize: 3 });
@@ -318,7 +410,8 @@ describe('createBatchingSender', () => {
 
   it('keeps keepalive requests within the browser budget', async () => {
     const { calls, transport } = recorder();
-    sender = createBatchingSender(transport);
+    // Larger than the keepalive budget
+    sender = createBatchingSender(transport, { maxBatchBytes: 100000 });
     const big = (msg: string) => info(msg + 'x'.repeat(25000));
 
     sender.send(big('a'));
