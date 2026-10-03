@@ -31,7 +31,7 @@ items that cannot be tracked here. Update it when a phase completes or the scope
 | 6. Hardening | [#51](https://github.com/kuzzleio/kuzzle-logger/issues/51) | Browser entries silently rejected by the backend (namespace, depth) | – | ✅ Done ([PR #62](https://github.com/kuzzleio/kuzzle-logger/pull/62)) |
 | 6. Hardening | [#52](https://github.com/kuzzleio/kuzzle-logger/issues/52) | Custom sanitize denylist redacts protocol fields | – | ✅ Done ([PR #65](https://github.com/kuzzleio/kuzzle-logger/pull/65)) |
 | 6. Hardening | [#53](https://github.com/kuzzleio/kuzzle-logger/issues/53) | Sensitive query parameters not redacted | – | ✅ Done ([PR #66](https://github.com/kuzzleio/kuzzle-logger/pull/66)) |
-| 6. Hardening | [#54](https://github.com/kuzzleio/kuzzle-logger/issues/54) | Fingerprints change across deploys | – | ⬜ Todo |
+| 6. Hardening | [#54](https://github.com/kuzzleio/kuzzle-logger/issues/54) | Fingerprints change across deploys | – | ✅ Done ([PR #67](https://github.com/kuzzleio/kuzzle-logger/pull/67)) |
 | 6. Hardening | [#55](https://github.com/kuzzleio/kuzzle-logger/issues/55) | Child loggers keep the level they had when created | – | ⬜ Todo |
 | 6. Hardening | [#56](https://github.com/kuzzleio/kuzzle-logger/issues/56) | Extensionless deep imports no longer resolve since 1.5.0 | – | ⬜ Todo |
 | 6. Hardening | [#57](https://github.com/kuzzleio/kuzzle-logger/issues/57) | Ingestion hardening for anonymous users | – | ⬜ Todo |
