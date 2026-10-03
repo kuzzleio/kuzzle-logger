@@ -35,12 +35,9 @@ The default preset that outputs logs to the standard output.
 
 #### Behavior
 
-- In development environment (`NODE_ENV=development`):
-  - Uses `pino-pretty` for formatted output
-  - Minimum level set to `trace`
-- In other environments:
-  - Uses `pino/file` with destination to stdout
-  - Default level is `info`
+- When `NODE_ENV` is `development` or not set: entries are pretty-printed with `pino-pretty`, which must be installed.
+- Otherwise: entries are written to stdout as JSON lines.
+- The default level is `info`.
 
 ### FilePresetOptions
 
@@ -96,6 +93,7 @@ interface LokiPresetOptions extends BasePresetOptions {
     interval?: number;
     labels?: Record<string, string>;
     levelMap?: Record<number, string>;
+    propsToLabels?: string[];
   };
 }
 ```
@@ -110,6 +108,7 @@ Configures logging to Grafana Loki.
 - `interval`: Batch sending interval in seconds (defaults to 1)
 - `labels`: Custom labels to add to log entries. The `service_name` label is set from `serviceName` when it is defined; a `service_name` provided here takes precedence
 - `levelMap`: Custom mapping of numeric levels to string names
+- `propsToLabels`: Log entry properties to use as Loki labels (e.g. `["namespace"]`). Only use low-cardinality properties
 
 ## Examples
 

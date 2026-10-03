@@ -4,48 +4,40 @@
 [![npm version](https://badge.fury.io/js/kuzzle-logger.svg)](https://badge.fury.io/js/kuzzle-logger)
 [![License](https://img.shields.io/github/license/kuzzleio/kuzzle-logger)](LICENSE)
 
-A powerful and flexible logging package designed for Kuzzle backend, JS SDK, and related modules (like gateways). Built on top of [Pino](https://github.com/pinojs/pino), it provides a robust logging solution with multiple transport options and preset configurations.
+The logger of [Kuzzle](https://github.com/kuzzleio/kuzzle) and its applications, built on [Pino](https://github.com/pinojs/pino). It writes JSON logs to stdout, a file, Loki or Elasticsearch, and can collect the logs of a frontend through its Kuzzle backend.
 
-## Features
+📖 **Documentation: [docs.kuzzle.io/modules/logger/1](https://docs.kuzzle.io/modules/logger/1/)**
 
-- 🚀 High-performance logging with minimal overhead
-- 📦 Multiple transport options (Console, Elasticsearch, Loki)
-- 🎨 Customizable log formats and levels
-- 🔧 Pre-configured presets for common use cases
-- 🔄 TypeScript support
-- 🎯 Zero configuration needed to get started
-
-## Installation
+## Install
 
 ```bash
 npm install kuzzle-logger
 ```
 
-## Quick Start
+## Node
 
 ```javascript
 const { KuzzleLogger } = require('kuzzle-logger');
 
-const logger = new KuzzleLogger();
+const logger = new KuzzleLogger({
+  serviceName: 'my-service',
+  transport: { preset: 'loki', presetOptions: { host: 'http://localhost:3100' } },
+});
 
-logger.info('Hello, Kuzzle Logger!');
-logger.error({ err: new Error('Oops!') }, 'Something went wrong');
+logger.info('Service started');
+logger.error({ err: new Error('Oops'), assetId: 'a-42' }, 'Something went wrong');
+logger.child('mqtt').debug('Connected'); // namespace "mqtt"
 ```
 
-## Entry points
+In a Kuzzle application, use `app.log` instead: it is already a Kuzzle Logger, configured by the `server.appLogs` section of `.kuzzlerc` ([Getting started](https://docs.kuzzle.io/modules/logger/1/guides/getting-started/)).
 
-| Import | Runs in | Format |
-|---|---|---|
-| `kuzzle-logger` | Node | CommonJS |
-| `kuzzle-logger/browser` | Browser | ESM |
-| `kuzzle-logger/kuzzle` | Node (Kuzzle application) | CommonJS |
+## Browser logging
 
-`kuzzle-logger/browser` and `kuzzle-logger/kuzzle` are the two halves of browser logging
-([ADR-0001](adr/0001-browser-logging.md)): browser logs are sent to the application's
-Kuzzle backend, which forwards them with its own logger and transports.
+Frontend logs and uncaught errors are sent to the application's Kuzzle backend, which writes them with its own logger. The browser never holds log storage credentials.
+
+**1. Backend:** register the ingestion controller, then grant `browser-logs:push` to the frontend users' roles.
 
 ```javascript
-// Kuzzle application
 import { BadRequestError } from 'kuzzle';
 import { createBrowserLogsController } from 'kuzzle-logger/kuzzle';
 
@@ -53,8 +45,11 @@ app.controller.register(
   'browser-logs',
   createBrowserLogsController(app.log, { badRequest: (message) => new BadRequestError(message) }),
 );
+```
 
-// Frontend
+**2. Frontend:** create the logger with the Kuzzle SDK instance, and capture uncaught errors.
+
+```javascript
 import {
   KuzzleLogger,
   captureGlobalErrors,
@@ -62,40 +57,30 @@ import {
   createVueErrorHandler,
 } from 'kuzzle-logger/browser';
 
-const logger = new KuzzleLogger({ level: 'info', sender: createKuzzleSender(sdk) });
+export const logger = new KuzzleLogger({ namespace: 'web', sender: createKuzzleSender(kuzzle) });
+
+captureGlobalErrors(logger.child('global'));
+app.config.errorHandler = createVueErrorHandler(logger.child('vue')); // Vue only
 
 logger.error(new Error('Failed to load assets'));
-
-// Opt-in: uncaught errors, unhandled rejections and Vue errors
-captureGlobalErrors(logger.child('global'));
-app.config.errorHandler = createVueErrorHandler(logger.child('vue'));
 ```
 
-## Documentation
+Full walkthrough, with rights, CSP and troubleshooting: [Set up browser logging](https://docs.kuzzle.io/modules/logger/1/guides/browser-logging-setup/).
 
-The documentation is published on [docs.kuzzle.io](https://docs.kuzzle.io/modules/logger/1/), from the [`doc/1`](doc/1) directory:
+## Entry points
 
-- [Getting started](doc/1/guides/getting-started/index.md)
-- [Transport configuration](doc/1/guides/transport-configuration/index.md)
-- [Presets](doc/1/guides/presets/index.md)
-- [Child logger](doc/1/guides/child-logger/index.md)
-- [Browser logging](doc/1/guides/browser-logging/index.md)
-- [Ingesting browser logs in Kuzzle](doc/1/guides/browser-logs-ingestion/index.md)
-- [Grafana dashboards](doc/1/guides/grafana-dashboards/index.md)
-- [API reference](doc/1/api/kuzzle-logger/index.md)
+| Import                  | Runs in                   | Format   |
+| ----------------------- | ------------------------- | -------- |
+| `kuzzle-logger`         | Node                      | CommonJS |
+| `kuzzle-logger/browser` | Browser (with a bundler)  | ESM      |
+| `kuzzle-logger/kuzzle`  | Node (Kuzzle application) | CommonJS |
 
 ## Contributing
 
-We love contributions! If you'd like to contribute, please feel free to submit a PR.
+See [AGENTS.md](AGENTS.md) for the repository layout, commands and conventions. Design decisions are recorded in [`adr/`](adr). Documentation sources are in [`doc/1`](doc/1).
 
-## Support
-
-If you have any questions or encounter issues, please:
-
-- Check our [documentation](https://docs.kuzzle.io/modules/logger/1/)
-- Open an [issue](https://github.com/kuzzleio/kuzzle-logger/issues)
-- Contact us at support@kuzzle.io
+Questions and bugs: open an [issue](https://github.com/kuzzleio/kuzzle-logger/issues) or contact support@kuzzle.io.
 
 ## License
 
-This project is released under the [Apache 2.0 License](LICENSE).
+[Apache 2.0](LICENSE)
