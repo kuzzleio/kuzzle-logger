@@ -13,16 +13,22 @@ export interface TransportMultiOptionsWithPreset<TransportOptions = Record<strin
   dedupe?: boolean;
 }
 
+/**
+ * Transport configuration: a preset, a Pino transport (single, multi or pipeline),
+ * or several targets mixing presets and Pino targets.
+ */
+export type TransportConfig =
+  | TransportPresetOptions
+  | TransportMultiOptionsWithPreset
+  | pino.TransportSingleOptions
+  | pino.TransportPipelineOptions;
+
 export type KuzzleLoggerConfig = {
   getMergingObject?: () => JSONObject;
   level?: pino.LevelWithSilent;
   serviceName?: string;
   skipPinoInstance?: boolean;
-  transport?:
-    | pino.TransportSingleOptions
-    | TransportMultiOptionsWithPreset
-    | pino.TransportPipelineOptions
-    | TransportPresetOptions;
+  transport?: TransportConfig;
 };
 
 export type GlobalSettings = Omit<KuzzleLoggerConfig, 'getMergingObject' | 'transport'>;

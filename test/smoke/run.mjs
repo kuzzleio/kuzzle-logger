@@ -86,7 +86,7 @@ try {
 
   step('Types: bundler, node16 and node10 resolutions', () => {
     const imports = `
-      import { KuzzleLogger } from 'kuzzle-logger';
+      import { KuzzleLogger, TransportConfig } from 'kuzzle-logger';
       import { KuzzleLogger as Legacy } from 'kuzzle-logger/dist';
       import { KuzzleLogger as Deep } from 'kuzzle-logger/dist/KuzzleLogger';
       import { KuzzleLogger as DeepJs } from 'kuzzle-logger/dist/KuzzleLogger.js';
@@ -101,7 +101,8 @@ try {
       stop();
       const payload: BrowserLogsPayload = { entries: [{ level: 'error' }], version: PAYLOAD_VERSION };
       const result: BatchValidationResult = validateBatch(payload);
-      const config: KuzzleLoggerConfig = { level: 'info' };
+      const transport: TransportConfig = { preset: 'stdout' };
+      const config: KuzzleLoggerConfig = { level: 'info', transport };
       export const used = [KuzzleLogger, Legacy, Deep, DeepJs, config, result];
     `;
     write('types.ts', imports);
