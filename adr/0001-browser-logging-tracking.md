@@ -36,7 +36,7 @@ items that cannot be tracked here. Update it when a phase completes or the scope
 | 6. Hardening | [#56](https://github.com/kuzzleio/kuzzle-logger/issues/56) | Extensionless deep imports no longer resolve since 1.5.0 | – | ✅ Done ([PR #69](https://github.com/kuzzleio/kuzzle-logger/pull/69)) |
 | 6. Hardening | [#57](https://github.com/kuzzleio/kuzzle-logger/issues/57) | Ingestion hardening for anonymous users | – | ⬜ Todo |
 | 6. Hardening | [#58](https://github.com/kuzzleio/kuzzle-logger/issues/58) | Flush, capture and Vue handler improvements | – | ⬜ Todo |
-| 6. Hardening | [#59](https://github.com/kuzzleio/kuzzle-logger/issues/59) | CI release workflow follow-ups | – | ⬜ Todo |
+| 6. Hardening | [#59](https://github.com/kuzzleio/kuzzle-logger/issues/59) | CI release workflow follow-ups | – | ✅ Done ([PR #71](https://github.com/kuzzleio/kuzzle-logger/pull/71)) |
 
 Status legend: ⬜ Todo · 🟦 In progress · ✅ Done · ⏸️ Blocked
 
