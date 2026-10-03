@@ -179,6 +179,27 @@ describe('createBrowserLogsController', () => {
     });
   });
 
+  it('keeps level, namespace and time with a denylist naming them', async () => {
+    const { lines, push } = setup({ sanitize: { denylist: ['level', 'name', 'time'] } });
+
+    const result = await push(
+      request({
+        entries: [
+          { context: { name: 'Alice' }, level: 'warn', msg: 'm', namespace: 'map', time: 1 },
+        ],
+        version: 1,
+      }),
+    );
+
+    expect(result).toEqual({ accepted: 1, rejected: [] });
+    expect(lines[0]).toMatchObject({
+      clientTime: 1,
+      context: { name: '[REDACTED]' },
+      level: 40,
+      namespace: 'kuzzle:app:browser:map',
+    });
+  });
+
   it('sanitizes entries before logging them', async () => {
     const { lines, push } = setup({ sanitize: { denylist: ['email'] } });
 

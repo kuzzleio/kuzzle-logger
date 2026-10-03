@@ -314,6 +314,41 @@ describe('sanitize', () => {
     });
   });
 
+  it('only redacts by key in context and error custom properties', () => {
+    const entry: BrowserLogEntry = {
+      context: { age: 42, name: 'Alice', nested: { lastName: 'Doe' } },
+      err: {
+        cause: { message: 'inner', name: 'Error', userName: 'bob' },
+        errors: [{ ageGroup: 'adult', message: 'one', name: 'RangeError' }],
+        fieldName: 'email',
+        message: 'Wrong age for Alice',
+        name: 'ValidationError',
+        stack: 'ValidationError: Wrong age for Alice\n    at f (app.js:1:1)',
+      },
+      level: 'error',
+      msg: 'name and age rejected',
+      namespace: 'form:name',
+      time: 1759312800000,
+    };
+    const result = sanitize(entry, { denylist: ['name', 'age', 'time', 'level'] });
+
+    expect(result).toEqual({
+      context: { age: '[REDACTED]', name: '[REDACTED]', nested: { lastName: '[REDACTED]' } },
+      err: {
+        cause: { message: 'inner', name: 'Error', userName: '[REDACTED]' },
+        errors: [{ ageGroup: '[REDACTED]', message: 'one', name: 'RangeError' }],
+        fieldName: '[REDACTED]',
+        message: 'Wrong age for Alice',
+        name: 'ValidationError',
+        stack: 'ValidationError: Wrong age for Alice\n    at f (app.js:1:1)',
+      },
+      level: 'error',
+      msg: 'name and age rejected',
+      namespace: 'form:name',
+      time: 1759312800000,
+    });
+  });
+
   it('redacts tokens in msg, context strings and errors', () => {
     const entry: BrowserLogEntry = {
       context: { url: `https://api.example.com/x?jwt=${JWT}&page=2` },

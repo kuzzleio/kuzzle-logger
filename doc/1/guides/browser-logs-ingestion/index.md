@@ -161,7 +161,7 @@ When the browser buffer overflows, the next batch says how many entries were dro
 
 Before it is logged, every entry is sanitized:
 
-- values of keys containing `apikey`, `authorization`, `cookie`, `credential`, `jwt`, `passwd`, `password`, `secret`, `sessionid` or `token` are replaced with `[REDACTED]`, in `context` and `err` (case-insensitive, `-` and `_` ignored: `accessToken`, `x-api-key` and `Set-Cookie` match);
+- values of keys containing `apikey`, `authorization`, `cookie`, `credential`, `jwt`, `passwd`, `password`, `secret`, `sessionid` or `token` are replaced with `[REDACTED]`, in `context` and in the custom properties of `err` and its causes (case-insensitive, `-` and `_` ignored: `accessToken`, `x-api-key` and `Set-Cookie` match). `level`, `namespace`, `time` and error names and messages are never redacted by key, so a `denylist` entry such as `name` or `age` only applies to `context` and error properties;
 - JWTs, `Bearer` and `Basic` credentials and sensitive query parameters (`token=`, `api_key=`, `password=`...) are redacted from every string, including `msg` and stacks.
 
 ```typescript
