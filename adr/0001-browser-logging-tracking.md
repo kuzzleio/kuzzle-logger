@@ -29,7 +29,7 @@ items that cannot be tracked here. Update it when a phase completes or the scope
 | 6. Hardening | [#49](https://github.com/kuzzleio/kuzzle-logger/issues/49) | Entries lost on `pagehide` while a request is in flight | – | ✅ Done ([PR #63](https://github.com/kuzzleio/kuzzle-logger/pull/63)) |
 | 6. Hardening | [#50](https://github.com/kuzzleio/kuzzle-logger/issues/50) | Limit batch size in bytes | – | ✅ Done ([PR #64](https://github.com/kuzzleio/kuzzle-logger/pull/64)) |
 | 6. Hardening | [#51](https://github.com/kuzzleio/kuzzle-logger/issues/51) | Browser entries silently rejected by the backend (namespace, depth) | – | ✅ Done ([PR #62](https://github.com/kuzzleio/kuzzle-logger/pull/62)) |
-| 6. Hardening | [#52](https://github.com/kuzzleio/kuzzle-logger/issues/52) | Custom sanitize denylist redacts protocol fields | – | ⬜ Todo |
+| 6. Hardening | [#52](https://github.com/kuzzleio/kuzzle-logger/issues/52) | Custom sanitize denylist redacts protocol fields | – | ✅ Done ([PR #65](https://github.com/kuzzleio/kuzzle-logger/pull/65)) |
 | 6. Hardening | [#53](https://github.com/kuzzleio/kuzzle-logger/issues/53) | Sensitive query parameters not redacted | – | ⬜ Todo |
 | 6. Hardening | [#54](https://github.com/kuzzleio/kuzzle-logger/issues/54) | Fingerprints change across deploys | – | ⬜ Todo |
 | 6. Hardening | [#55](https://github.com/kuzzleio/kuzzle-logger/issues/55) | Child loggers keep the level they had when created | – | ⬜ Todo |
