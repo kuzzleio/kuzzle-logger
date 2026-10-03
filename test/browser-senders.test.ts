@@ -269,6 +269,96 @@ describe('createBatchingSender', () => {
     ]);
   });
 
+  it('sends with keepalive on pagehide without waiting for the request in flight', async () => {
+    const hanging: { reject: (error: Error) => void }[] = [];
+    const { calls, transport } = recorder();
+    transport.mockImplementationOnce(async (payload, { keepalive }) => {
+      calls.push({ keepalive, payload: structuredClone(payload) });
+
+      // The page unloads: this request never completes
+      return new Promise<void>((_resolve, reject) => {
+        hanging.push({ reject });
+      });
+    });
+    sender = createBatchingSender(transport);
+
+    sender.send({ level: 'error', msg: 'in flight' });
+    sender.send(info('buffered'));
+    window.dispatchEvent(new Event('pagehide'));
+
+    // Synchronously: the page may be gone at the next tick
+    expect(calls.map(({ keepalive, payload }) => [keepalive, msgs(payload)])).toEqual([
+      [false, ['in flight']],
+      [true, ['in flight', 'buffered']],
+    ]);
+
+    // The keepalive request took over the batch: it is not retried
+    hanging[0].reject(new Error('offline'));
+    await vi.advanceTimersByTimeAsync(60000);
+    expect(calls).toHaveLength(2);
+  });
+
+  it('sends the entries buffered during a retry backoff with keepalive on pagehide', async () => {
+    const { calls, transport } = recorder((call) => (call === 1 ? new Error('offline') : null));
+    sender = createBatchingSender(transport, { maxBatchSize: 2, retryDelay: 10000 });
+
+    sender.send({ level: 'error', msg: 'a' });
+    await vi.advanceTimersByTimeAsync(0);
+    for (const msg of ['b', 'c', 'd']) {
+      sender.send(info(msg));
+    }
+    window.dispatchEvent(new Event('pagehide'));
+
+    expect(calls.map(({ keepalive, payload }) => [keepalive, msgs(payload)])).toEqual([
+      [false, ['a']],
+      [true, ['a', 'b']],
+      [true, ['c', 'd']],
+    ]);
+  });
+
+  it('keeps keepalive requests within the browser budget', async () => {
+    const { calls, transport } = recorder();
+    sender = createBatchingSender(transport);
+    const big = (msg: string) => info(msg + 'x'.repeat(25000));
+
+    sender.send(big('a'));
+    sender.send(big('b'));
+    sender.send(big('c'));
+    window.dispatchEvent(new Event('pagehide'));
+
+    // The 3 entries do not fit in one keepalive request: the batch is split
+    expect(calls.map(({ payload }) => payload.entries.map(({ msg }) => msg?.[0]))).toEqual([
+      ['a', 'b'],
+    ]);
+
+    // The page is visible again: the rest is sent normally
+    await sender.flush();
+
+    expect(
+      calls.map(({ keepalive, payload }) => [
+        keepalive,
+        payload.entries.map(({ msg }) => msg?.[0]),
+      ]),
+    ).toEqual([
+      [true, ['a', 'b']],
+      [false, ['c']],
+    ]);
+  });
+
+  it('requeues the entries of a failed keepalive request', async () => {
+    const { calls, transport } = recorder((call) => (call === 1 ? new Error('offline') : null));
+    sender = createBatchingSender(transport);
+
+    sender.send(info('a'));
+    window.dispatchEvent(new Event('pagehide'));
+    await vi.advanceTimersByTimeAsync(5000);
+
+    expect(calls.map(({ keepalive, payload }) => [keepalive, msgs(payload)])).toEqual([
+      [true, ['a']],
+      [false, ['a']],
+    ]);
+  });
+
   it('close() stops timers and listeners', async () => {
     const { calls, transport } = recorder();
     sender = createBatchingSender(transport);

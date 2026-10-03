@@ -104,7 +104,7 @@ Senders buffer entries and send them in batches:
 
 - when `maxBatchSize` entries are pending, or `flushInterval` after the first one;
 - immediately for `error` and `fatal` entries;
-- when the page is hidden or closed (`pagehide`, `visibilitychange`), with `fetch` `keepalive`.
+- when the page is hidden or closed (`pagehide`, `visibilitychange`), with `fetch` `keepalive`: every pending batch at once, within the browser keepalive limit (64 KB in total). A batch still in flight is sent again, since the page may be gone before it completes: the backend can receive it twice.
 
 Failed batches are retried with an exponential backoff. Rejected batches (4xx responses, except 408 and 429) are not retried. Senders never log, so a failing backend cannot cause a logging loop. After a dropped batch, `error` and `fatal` entries wait for `flushInterval` instead of being sent immediately, until a batch is sent again: an application that logs its failed requests at `error` level does not start a request loop. One batch is sent at a time: entries logged while it is in flight, even by the transport itself, go in the next one.
 
