@@ -80,8 +80,8 @@ export type BrowserLogsApp = {
 export type BrowserLogsPayload = {
   app?: BrowserLogsApp;
   /**
-   * Number of entries dropped by the browser since the previous batch
-   * (bounded buffer overflow).
+   * Number of entries dropped by the browser since the previous batch (full buffer,
+   * or batch dropped after its retries).
    */
   dropped?: number;
   entries: BrowserLogEntry[];

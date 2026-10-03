@@ -171,6 +171,45 @@ describe('validateBatch', () => {
       expect(entry.err?.stack).toHaveLength(60);
     });
 
+    it('truncates error names, custom error strings and context strings', () => {
+      const result = validateBatch(
+        batch([
+          {
+            context: { nested: { list: ['c'.repeat(100)] }, note: 'n'.repeat(100), short: 'ok' },
+            err: {
+              cause: { message: 'cause', name: 'Error', stack: 's'.repeat(100) },
+              code: 'x'.repeat(100),
+              message: 'boom',
+              name: 'N'.repeat(500),
+              stack: 's'.repeat(100),
+            },
+            level: 'error',
+          },
+        ]),
+        { maxMessageLength: 50, maxStackLength: 60 },
+      );
+
+      const [entry] = (result as { entries: BrowserLogEntry[] }).entries;
+
+      expect(entry.err?.name).toHaveLength(50);
+      expect(entry.err?.name).toMatch(/…\[truncated\]$/);
+      expect(entry.err?.code).toHaveLength(50);
+      expect(entry.err?.stack).toHaveLength(60);
+      // Stacks of causes keep the stack limit
+      expect((entry.err?.cause as { stack: string }).stack).toHaveLength(60);
+      expect(entry.context?.note).toHaveLength(50);
+      expect((entry.context?.nested as { list: string[] }).list[0]).toHaveLength(50);
+      expect(entry.context?.short).toBe('ok');
+    });
+
+    it('truncates error names to 128 characters', () => {
+      const result = validEntries(
+        batch([{ err: { message: 'boom', name: 'N'.repeat(500) }, level: 'error' }]),
+      );
+
+      expect(result.entries[0].err?.name).toHaveLength(128);
+    });
+
     it('normalizes namespaces instead of rejecting them', () => {
       const result = validEntries(
         batch([
@@ -272,6 +311,10 @@ describe('validateBatch', () => {
 
     it.each([0, -1, 1.5, '3', Number.MAX_VALUE])('ignores invalid dropped %s', (dropped) => {
       expect(validEntries(batch([], { dropped }))).not.toHaveProperty('dropped');
+    });
+
+    it('clamps the dropped counter', () => {
+      expect(validEntries(batch([], { dropped: Number.MAX_SAFE_INTEGER })).dropped).toBe(1_000_000);
     });
 
     it('ignores invalid app values', () => {

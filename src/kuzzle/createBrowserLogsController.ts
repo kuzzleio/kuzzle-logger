@@ -1,5 +1,5 @@
 import { fingerprint } from '../protocol/fingerprint';
-import { BrowserLogEntry, BrowserLogLevel } from '../protocol/payload';
+import { BROWSER_LOG_LEVELS, BrowserLogEntry, BrowserLogLevel } from '../protocol/payload';
 import { SanitizeOptions, sanitize } from '../protocol/sanitize';
 import { BatchLimits, RejectedEntry, validateBatch } from '../protocol/validateBatch';
 import { JSONObject } from '../types/JSONObject';
@@ -37,6 +37,17 @@ export type BrowserLogsControllerOptions = {
    * @default "push"
    */
   action?: string;
+  /**
+   * Client namespaces that can get their own child logger: a list, or a predicate.
+   * Namespaces are checked after normalization (e.g. "MapView.vue" becomes
+   * "MapView_vue"). Entries with other namespaces are logged under the base namespace,
+   * with their namespace in the "clientNamespace" field. "maxNamespaces" still applies.
+   *
+   * Without it, the "maxNamespaces" slots are first come, first served: an anonymous
+   * client can claim them all with junk namespaces.
+   * @default every namespace
+   */
+  allowedNamespaces?: readonly string[] | ((namespace: string) => boolean);
   /**
    * Builds the error thrown for an invalid batch. Kuzzle only answers with the error
    * status when it is a KuzzleError, so pass `(message) => new BadRequestError(message)`
@@ -123,6 +134,8 @@ export function createBrowserLogsController(
   const maxNamespaces = options.maxNamespaces ?? 50;
   const badRequest = options.badRequest ?? defaultBadRequest;
   const httpPath = options.httpPath === undefined ? 'browser-logs/_push' : options.httpPath;
+  const isAllowed = allowedNamespacesPredicate(options.allowedNamespaces);
+  const warnAccepted = (options.limits?.levels ?? BROWSER_LOG_LEVELS).includes('warn');
 
   const loggerFor = (namespace: string | undefined): BrowserLogsTargetLogger | null => {
     if (namespace === undefined) {
@@ -131,7 +144,7 @@ export function createBrowserLogsController(
 
     let child = children.get(namespace);
 
-    if (!child && children.size < maxNamespaces) {
+    if (!child && children.size < maxNamespaces && isAllowed(namespace)) {
       child = baseLogger.child(namespace);
       children.set(namespace, child);
     }
@@ -201,10 +214,11 @@ export function createBrowserLogsController(
       }
     }
 
-    if (result.dropped) {
+    // The client counts entries dropped from its full buffer and in failed batches
+    if (result.dropped && warnAccepted) {
       baseLogger.warn(
         { ...enrichment, dropped: result.dropped },
-        `Browser dropped ${result.dropped} log entries (buffer overflow)`,
+        `Browser lost ${result.dropped} log entries (buffer full or failed sends)`,
       );
     }
 
@@ -221,6 +235,28 @@ export function createBrowserLogsController(
       },
     },
   };
+}
+
+function allowedNamespacesPredicate(
+  allowed: BrowserLogsControllerOptions['allowedNamespaces'],
+): (namespace: string) => boolean {
+  if (allowed === undefined) {
+    return () => true;
+  }
+
+  if (typeof allowed === 'function') {
+    return (namespace) => {
+      try {
+        return allowed(namespace) === true;
+      } catch {
+        return false;
+      }
+    };
+  }
+
+  const set = new Set(allowed);
+
+  return (namespace) => set.has(namespace);
 }
 
 function defaultBadRequest(message: string): Error {
