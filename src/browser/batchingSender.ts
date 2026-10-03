@@ -103,6 +103,10 @@ export function createBatchingSender(
   let attempt = 0;
   let timer: ReturnType<typeof setTimeout> | null = null;
   let retrying = false;
+  // True after a dropped batch, until a batch is sent: immediate flushes are throttled
+  // to flushInterval, so that an application logging each failed request at "error"
+  // level does not start a request loop.
+  let failing = false;
   let inflight: Promise<void> | null = null;
   let closed = false;
 
@@ -151,11 +155,13 @@ export function createBatchingSender(
     try {
       await transport(payload, { keepalive });
       attempt = 0;
+      failing = false;
 
       return 'sent';
     } catch (error) {
       if (error instanceof NonRetryableError || attempt >= maxRetries) {
         attempt = 0;
+        failing = true;
         dropped += droppedBefore + entries.length;
 
         return 'dropped';
@@ -207,13 +213,22 @@ export function createBatchingSender(
       return;
     }
 
-    inflight = run(keepalive)
+    // Set before run() reaches the transport: a transport that logs synchronously
+    // must not start a second run (re-entrant flush)
+    let done = () => {};
+    const current = new Promise<void>((resolve) => {
+      done = resolve;
+    });
+
+    inflight = current;
+    void run(keepalive)
       .catch(() => {})
       .finally(() => {
         inflight = null;
+        done();
       });
 
-    await inflight;
+    await current;
   };
 
   const onHide = () => {
@@ -259,7 +274,14 @@ export function createBatchingSender(
         return;
       }
 
-      if (IMMEDIATE_LEVELS.has(entry.level) || buffer.length >= maxBatchSize) {
+      // The running batch loop sends it. The timer covers an entry pushed after the
+      // loop's last check.
+      if (inflight) {
+        schedule(flushInterval);
+        return;
+      }
+
+      if (!failing && (IMMEDIATE_LEVELS.has(entry.level) || buffer.length >= maxBatchSize)) {
         void flush();
       } else {
         schedule(flushInterval);

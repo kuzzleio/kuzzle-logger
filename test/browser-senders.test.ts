@@ -145,8 +145,11 @@ describe('createBatchingSender', () => {
     await vi.advanceTimersByTimeAsync(10);
     expect(calls).toHaveLength(2);
 
+    // Throttled to flushInterval after a dropped batch
     sender.send({ level: 'error', msg: 'next' });
     await vi.advanceTimersByTimeAsync(0);
+    expect(calls).toHaveLength(2);
+    await vi.advanceTimersByTimeAsync(5000);
 
     expect(calls[2].payload).toMatchObject({ dropped: 1, entries: [{ msg: 'next' }] });
   });
@@ -162,7 +165,7 @@ describe('createBatchingSender', () => {
     expect(calls).toHaveLength(1);
 
     sender.send({ level: 'error', msg: 'next' });
-    await vi.advanceTimersByTimeAsync(0);
+    await vi.advanceTimersByTimeAsync(5000);
 
     expect(calls[1].payload).toMatchObject({ dropped: 1, entries: [{ msg: 'next' }] });
   });
@@ -175,6 +178,75 @@ describe('createBatchingSender', () => {
 
     expect(() => sender!.send({ level: 'fatal', msg: 'x' })).not.toThrow();
     await expect(sender.flush()).resolves.toBeUndefined();
+  });
+
+  it('keeps one transport call in flight when the transport logs synchronously', async () => {
+    let running = 0;
+    let maxRunning = 0;
+    let calls = 0;
+    const transport = vi.fn(async () => {
+      calls++;
+      running++;
+      maxRunning = Math.max(maxRunning, running);
+
+      // e.g. an HTTP sender headers() function that logs
+      if (calls <= 3) {
+        logger.error(`transport ${calls}`);
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      running--;
+    });
+    sender = createBatchingSender(transport);
+    const logger = new KuzzleLogger({ console: false, sender });
+
+    expect(() => logger.error('boom')).not.toThrow();
+    await vi.advanceTimersByTimeAsync(10000);
+
+    expect(maxRunning).toBe(1);
+    expect(transport.mock.calls.map(([payload]) => msgs(payload))).toEqual([
+      ['boom'],
+      ['transport 1'],
+      ['transport 2'],
+      ['transport 3'],
+    ]);
+  });
+
+  it('throttles immediate flushes while batches are dropped', async () => {
+    const { calls, transport } = recorder(() => {
+      // The application logs each failed request, e.g. a 403 from the SDK
+      setTimeout(() => logger.error('request failed'), 0);
+
+      return new NonRetryableError('403');
+    });
+    sender = createBatchingSender(transport, { flushInterval: 5000 });
+    const logger = new KuzzleLogger({ console: false, sender });
+
+    logger.error('boom');
+    await vi.advanceTimersByTimeAsync(11000);
+
+    // One request per flushInterval instead of a loop at round-trip speed
+    expect(calls).toHaveLength(3);
+  });
+
+  it('flushes immediately again once a batch is sent', async () => {
+    const { calls, transport } = recorder((call) =>
+      call === 1 ? new NonRetryableError('403') : null,
+    );
+    sender = createBatchingSender(transport, { flushInterval: 5000 });
+
+    sender.send({ level: 'error', msg: 'rejected' });
+    await vi.advanceTimersByTimeAsync(0);
+    sender.send({ level: 'error', msg: 'throttled' });
+    await vi.advanceTimersByTimeAsync(5000);
+    sender.send({ level: 'error', msg: 'immediate' });
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(calls.map(({ payload }) => msgs(payload))).toEqual([
+      ['rejected'],
+      ['throttled'],
+      ['immediate'],
+    ]);
   });
 
   it('flushes with keepalive when the page is hidden', async () => {
