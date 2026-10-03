@@ -26,7 +26,7 @@ items that cannot be tracked here. Update it when a phase completes or the scope
 | 5. Docs | [#20](https://github.com/kuzzleio/kuzzle-logger/issues/20) | Guides and Grafana queries | #16, #19 | ✅ Done |
 | 6. Hardening | [#47](https://github.com/kuzzleio/kuzzle-logger/issues/47) | Browser logging throws when `getMergingObject` throws | – | ✅ Done ([PR #60](https://github.com/kuzzleio/kuzzle-logger/pull/60)) |
 | 6. Hardening | [#48](https://github.com/kuzzleio/kuzzle-logger/issues/48) | Re-entrant flush when the transport logs synchronously | – | ✅ Done ([PR #61](https://github.com/kuzzleio/kuzzle-logger/pull/61)) |
-| 6. Hardening | [#49](https://github.com/kuzzleio/kuzzle-logger/issues/49) | Entries lost on `pagehide` while a request is in flight | – | ⬜ Todo |
+| 6. Hardening | [#49](https://github.com/kuzzleio/kuzzle-logger/issues/49) | Entries lost on `pagehide` while a request is in flight | – | ✅ Done ([PR #63](https://github.com/kuzzleio/kuzzle-logger/pull/63)) |
 | 6. Hardening | [#50](https://github.com/kuzzleio/kuzzle-logger/issues/50) | Limit batch size in bytes | – | ⬜ Todo |
 | 6. Hardening | [#51](https://github.com/kuzzleio/kuzzle-logger/issues/51) | Browser entries silently rejected by the backend (namespace, depth) | – | ✅ Done ([PR #62](https://github.com/kuzzleio/kuzzle-logger/pull/62)) |
 | 6. Hardening | [#52](https://github.com/kuzzleio/kuzzle-logger/issues/52) | Custom sanitize denylist redacts protocol fields | – | ⬜ Todo |
