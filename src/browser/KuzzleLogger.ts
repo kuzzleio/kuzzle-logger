@@ -129,7 +129,7 @@ export class KuzzleLogger {
 
     if (getMergingObject || namespace) {
       this.getMergingObject = () => {
-        const mergingObject = getMergingObject?.() ?? {};
+        const mergingObject = callMergingObject(getMergingObject);
 
         return namespace && !mergingObject.namespace
           ? { ...mergingObject, namespace }
@@ -234,19 +234,23 @@ export class KuzzleLogger {
   }
 
   private log(level: BrowserLogLevel, objOrMsg: any, args: any[]): void {
-    if (typeof objOrMsg === 'object' && objOrMsg !== null) {
-      const message = args.shift();
+    try {
+      if (typeof objOrMsg === 'object' && objOrMsg !== null) {
+        const message = args.shift();
 
-      if (isErrorLike(objOrMsg)) {
-        this._pino[level](this.toLogObject({}, objOrMsg), message ?? objOrMsg.message, ...args);
+        if (isErrorLike(objOrMsg)) {
+          this._pino[level](this.toLogObject({}, objOrMsg), message ?? objOrMsg.message, ...args);
+          return;
+        }
+
+        this._pino[level](this.toLogObject(objOrMsg), message, ...args);
         return;
       }
 
-      this._pino[level](this.toLogObject(objOrMsg), message, ...args);
-      return;
+      this._pino[level](this.toLogObject({}), objOrMsg, ...args);
+    } catch {
+      // Logging must never break the application
     }
-
-    this._pino[level](this.toLogObject({}), objOrMsg, ...args);
   }
 
   private toLogObject(obj: JSONObject, err?: unknown): { [ENTRY]: PendingEntry } {
@@ -290,6 +294,29 @@ export function withoutConsoleMirroring(fn: () => void): void {
   } finally {
     consoleMirroringSuppressed = false;
   }
+}
+
+/**
+ * Calls the user merging object: it runs on each log, possibly before the
+ * application state it reads exists (e.g. before login). Errors and non-object
+ * results are ignored, so the entry is still logged, without it.
+ */
+function callMergingObject(getMergingObject?: () => JSONObject): JSONObject {
+  try {
+    const mergingObject: unknown = getMergingObject?.();
+
+    if (
+      typeof mergingObject === 'object' &&
+      mergingObject !== null &&
+      !Array.isArray(mergingObject)
+    ) {
+      return mergingObject as JSONObject;
+    }
+  } catch {
+    // Logging must never break the application
+  }
+
+  return {};
 }
 
 function emit(output: Output, logObject: LogObject): void {

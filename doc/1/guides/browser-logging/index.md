@@ -52,7 +52,7 @@ export const logger = new KuzzleLogger({
 | `level`            | `info`  | Minimum level of the logged entries: `trace`, `debug`, `info`, `warn`, `error`, `fatal` or `silent`. It can be changed at runtime with `logger.level = 'debug'`.            |
 | `console`          | `true`  | Prints entries to the devtools console: `true` for every logged entry, `false` for none, or a level (entries at or above it). Only entries at or above `level` are printed. |
 | `namespace`        | –       | Base namespace of the entries.                                                                                                                                              |
-| `getMergingObject` | –       | Called on each log: its result is merged into the entry `context` (e.g. the current route).                                                                                 |
+| `getMergingObject` | –       | Called on each log: its result is merged into the entry `context` (e.g. the current route). If it throws or does not return an object, the entry is logged without it.      |
 | `sender`           | –       | Where entries are sent. Without a sender, the logger only prints to the console.                                                                                            |
 
 ## Logging
@@ -95,7 +95,7 @@ Errors are serialized with their name, message, stack, cause and custom properti
 }
 ```
 
-Logging never throws, even when the sender fails.
+Logging never throws, even when `getMergingObject` or the sender fails.
 
 ## Senders
 

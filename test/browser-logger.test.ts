@@ -227,6 +227,61 @@ describe('browser KuzzleLogger', () => {
       expect(entries[0].context).toEqual({ id: 1, route: '/home' });
     });
 
+    it('logs without the merging object when it throws', () => {
+      const store: { user: { id: string } | null } = { user: null };
+      const { entries, logger } = setup({
+        getMergingObject: () => ({ user: store.user!.id }),
+        namespace: 'dashboard',
+      });
+
+      expect(() => logger.info('before login')).not.toThrow();
+      expect(() => logger.child('map').warn({ id: 1 }, 'child')).not.toThrow();
+
+      store.user = { id: 'alice' };
+      logger.info('after login');
+
+      expect(entries).toEqual([
+        { level: 'info', msg: 'before login', namespace: 'dashboard', time: 1759312800000 },
+        {
+          context: { id: 1 },
+          level: 'warn',
+          msg: 'child',
+          namespace: 'dashboard:map',
+          time: 1759312800000,
+        },
+        {
+          context: { user: 'alice' },
+          level: 'info',
+          msg: 'after login',
+          namespace: 'dashboard',
+          time: 1759312800000,
+        },
+      ]);
+    });
+
+    it.each([[null], ['route'], [['a']]])('ignores a merging object that is %j', (value) => {
+      const { entries, logger } = setup({
+        getMergingObject: () => value as any,
+        namespace: 'dashboard',
+      });
+
+      expect(() => logger.info('hello')).not.toThrow();
+      expect(entries).toEqual([
+        { level: 'info', msg: 'hello', namespace: 'dashboard', time: 1759312800000 },
+      ]);
+    });
+
+    it('never throws when formatting the message fails', () => {
+      const { logger } = setup();
+      const hostile = {
+        toString() {
+          throw new Error('boom');
+        },
+      };
+
+      expect(() => logger.info('value: %s', hostile)).not.toThrow();
+    });
+
     it('lets children have their own level', () => {
       const { entries, logger } = setup();
       const child = logger.child('verbose');
