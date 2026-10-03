@@ -2,7 +2,8 @@ import { BrowserLogEntry } from './payload.js';
 
 /**
  * Returns a stable hash grouping occurrences of the same error (or message):
- * error name, normalized message and top stack frame.
+ * error name, normalized message and top stack frame (function and file, without
+ * build hash, line and column, which change with every deploy).
  *
  * Variable parts of messages (numbers, UUIDs, hexadecimal ids, quoted values, URLs)
  * are replaced by placeholders, so "User 42 not found" and "User 43 not found" share a
@@ -34,7 +35,8 @@ export function normalizeMessage(message: string): string {
 
 /**
  * Returns the first stack frame (V8, SpiderMonkey and JavaScriptCore formats), with
- * the query string, hash and build hash of the file name removed.
+ * the query string, hash, build hash of the file name ("index-B3x_9aZq.js",
+ * "main.0123456789abcdef0123.js"), line and column removed.
  */
 export function topFrame(stack: string | undefined): string {
   if (!stack) {
@@ -52,7 +54,10 @@ export function topFrame(stack: string | undefined): string {
     }
 
     if (frame !== null) {
-      return frame.replace(/[?#][^:)\s]*/g, '').replace(/[-.][A-Za-z0-9_]{8}(\.m?js)/g, '$1');
+      return frame
+        .replace(/[?#][^:)\s]*/g, '')
+        .replace(/:\d+(?::\d+)?(?=\)?$)/, '')
+        .replace(/[-.][A-Za-z0-9_-]{8,}(?=\.m?js\b)/g, '');
     }
   }
 

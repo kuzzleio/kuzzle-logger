@@ -437,8 +437,8 @@ describe('redactString', () => {
 });
 
 describe('fingerprint', () => {
-  const stack = (file: string, line = 10) =>
-    `TypeError: Cannot read properties of undefined (reading 'id')\n    at loadAsset (${file}:${line}:5)\n    at main (https://app.example.com/main.js:1:1)`;
+  const stack = (file: string, line = 10, column = 5) =>
+    `TypeError: Cannot read properties of undefined (reading 'id')\n    at loadAsset (${file}:${line}:${column})\n    at main (https://app.example.com/main.js:1:1)`;
 
   it('is stable for the same error', () => {
     const entry: BrowserLogEntry = {
@@ -466,7 +466,22 @@ describe('fingerprint', () => {
     );
   });
 
-  it('distinguishes error names, messages and locations', () => {
+  it('is stable across deploys: build hashes and positions are ignored', () => {
+    const make = (file: string, line: number, column: number): BrowserLogEntry => ({
+      err: { message: 'boom', name: 'TypeError', stack: stack(file, line, column) },
+      level: 'error',
+    });
+    const files = [
+      ['https://app/assets/index-B3x_9aZq.js', 1, 2045],
+      ['https://app/assets/index-Ck-LmP0w.js', 1, 3187],
+      ['https://app/assets/index.0123456789abcdef0123.js', 2, 10],
+      ['https://app/assets/index-a1b2c3d4e5f6.js', 1, 7],
+    ] as const;
+
+    expect(new Set(files.map((args) => fingerprint(make(...args)))).size).toBe(1);
+  });
+
+  it('distinguishes error names, messages, functions and files', () => {
     const base: BrowserLogEntry = {
       err: { message: 'boom', name: 'TypeError', stack: stack('https://app/a.js') },
       level: 'error',
@@ -474,8 +489,8 @@ describe('fingerprint', () => {
     const variants: BrowserLogEntry[] = [
       { ...base, err: { ...base.err!, name: 'RangeError' } },
       { ...base, err: { ...base.err!, message: 'other' } },
-      { ...base, err: { ...base.err!, stack: stack('https://app/a.js', 11) } },
       { ...base, err: { ...base.err!, stack: stack('https://app/b.js') } },
+      { ...base, err: { ...base.err!, stack: base.err!.stack!.replace('loadAsset', 'saveAsset') } },
     ];
 
     for (const variant of variants) {
@@ -514,14 +529,24 @@ describe('topFrame', () => {
     [
       'V8',
       'Error: x\n    at loadAsset (https://app/assets/index-B3x_9aZq.js?v=2:10:5)',
-      'loadAsset (https://app/assets/index.js:10:5)',
+      'loadAsset (https://app/assets/index.js)',
     ],
     [
       'SpiderMonkey/JSC',
       'loadAsset@https://app/assets/main.js#x:10:5\n@https://app/b.js:1:1',
-      'loadAsset@https://app/assets/main.js:10:5',
+      'loadAsset@https://app/assets/main.js',
     ],
-    ['anonymous JSC frame', '@https://app/b.js:1:1', '@https://app/b.js:1:1'],
+    ['anonymous JSC frame', '@https://app/b.js:1:1', '@https://app/b.js'],
+    [
+      'anonymous V8 frame',
+      'Error: x\n    at https://app/main-Ck-LmP0w.js:1:23',
+      'https://app/main.js',
+    ],
+    [
+      'webpack hash',
+      'Error: x\n    at f (https://app/main.0123456789abcdef0123.js:1:2)',
+      'f (https://app/main.js)',
+    ],
   ])('parses %s stacks', (_, stack, expected) => {
     expect(topFrame(stack)).toBe(expected);
   });

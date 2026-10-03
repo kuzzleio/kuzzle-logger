@@ -124,7 +124,7 @@ The browser cannot set any other field: everything it sends is nested under `con
 
 The fingerprint groups occurrences of the same problem:
 
-- for an error: its name, its normalized message and the top stack frame (without query string, hash or build hash in the file name);
+- for an error: its name, its normalized message and the function and file of the top stack frame. The query string, the hash, the build hash of the file name (`index-B3x_9aZq.js`, `main.0123456789abcdef0123.js`), the line and the column are removed, so the fingerprint stays the same across deploys. Two errors with the same name and message thrown from the same function of the same file share a fingerprint;
 - otherwise: the level, the namespace and the normalized message.
 
 Messages are normalized by replacing numbers, UUIDs, hexadecimal IDs, quoted strings and URLs with placeholders, so `Asset 42 not found` and `Asset 43 not found` share a fingerprint.
