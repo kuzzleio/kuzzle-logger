@@ -408,8 +408,31 @@ describe('redactString', () => {
     ['password=hunter2 next', 'password=[REDACTED] next'],
     ['authorization: Bearer abc.def', 'authorization: Bearer [REDACTED]'],
     ['no secret here', 'no secret here'],
+    ['/cb?client_secret=abc&state=1', '/cb?client_secret=[REDACTED]&state=1'],
+    ['mytoken=abc', 'mytoken=[REDACTED]'],
+    ['x-api-key=abc', 'x-api-key=[REDACTED]'],
+    ['refresh-token=abc', 'refresh-token=[REDACTED]'],
+    ['tokens=5 tokenizer=wordpiece', 'tokens=5 tokenizer=wordpiece'],
+    ['body {"password":"hunter2","user":"bob"}', 'body {"password":"[REDACTED]","user":"bob"}'],
+    ['{"accessToken": "a\\"b", "pin": 1234}', '{"accessToken": "[REDACTED]", "pin": 1234}'],
+    ['{"apiKey":42}', '{"apiKey":"[REDACTED]"}'],
+    ['Authorization: Token abc', 'Authorization: Token [REDACTED]'],
+    [`Authorization: Bearer ${JWT}`, 'Authorization: Bearer [REDACTED]'],
+    ['authorization=xyz', 'authorization=[REDACTED]'],
   ])('%s', (input, expected) => {
     expect(redactString(input)).toBe(expected);
+  });
+
+  it('redacts JSON keys from a custom denylist', () => {
+    expect(redactString('{"email":"a@b.c","id":1}', '***', ['email'])).toBe(
+      '{"email":"***","id":1}',
+    );
+  });
+
+  it('uses the custom denylist of sanitize in strings', () => {
+    const entry: BrowserLogEntry = { level: 'info', msg: 'payload {"e-mail":"a@b.c"}' };
+
+    expect(sanitize(entry, { denylist: ['email'] }).msg).toBe('payload {"e-mail":"[REDACTED]"}');
   });
 });
 

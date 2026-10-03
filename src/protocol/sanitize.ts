@@ -39,8 +39,16 @@ const JWT_PATTERN = /\beyJ[A-Za-z0-9_-]{2,}\.[A-Za-z0-9_-]{2,}\.[A-Za-z0-9_-]*/g
 
 const BEARER_PATTERN = /\b(Bearer|Basic)\s+[A-Za-z0-9._~+/=-]+/gi;
 
+// "Authorization: Token abc", "authorization=abc"
+const AUTHORIZATION_PATTERN =
+  /\b(authorization\s*[:=]\s*)(?:(Basic|Bearer|Digest|Negotiate|Token)\s+)?[^\s"',;&#]+/gi;
+
+// Any parameter name ending with a sensitive word: "client_secret=", "mytoken=", "x-api-key="
 const QUERY_PARAMETER_PATTERN =
-  /([?&#;]|\b)((?:access|id|refresh|auth)?_?token|api_?key|jwt|password|secret)=[^&#\s"']*/gi;
+  /(^|[?&#;\s"'(,{])([\w-]*?(?:token|secret|passwd|password|api[-_]?key|jwt))=[^&#\s"']*/gi;
+
+// "key": "value" or "key": 123, in JSON strings (e.g. a logged request body)
+const JSON_PROPERTY_PATTERN = /"([^"\\]{1,64})"(\s*:\s*)("(?:[^"\\]|\\.)*"|[\w.+-]+)/g;
 
 /**
  * Returns a sanitized copy of an entry:
@@ -58,7 +66,7 @@ export function sanitize(entry: BrowserLogEntry, options: SanitizeOptions = {}):
   const replacement = options.replacement ?? DEFAULT_REPLACEMENT;
   const sanitizeValue = (value: unknown): unknown => {
     if (typeof value === 'string') {
-      return redactString(value, replacement);
+      return redactString(value, replacement, denylist);
     }
 
     if (Array.isArray(value)) {
@@ -73,11 +81,7 @@ export function sanitize(entry: BrowserLogEntry, options: SanitizeOptions = {}):
           continue;
         }
 
-        const normalized = normalizeKey(key);
-
-        copy[key] = denylist.some((fragment) => normalized.includes(fragment))
-          ? replacement
-          : sanitizeValue(item);
+        copy[key] = isDenied(key, denylist) ? replacement : sanitizeValue(item);
       }
 
       return copy;
@@ -101,11 +105,11 @@ export function sanitize(entry: BrowserLogEntry, options: SanitizeOptions = {}):
     const { cause, errors, message, name, stack, ...properties } = value as BrowserLogError;
     const copy = sanitizeValue(properties) as BrowserLogError;
 
-    copy.message = redactString(message, replacement);
+    copy.message = redactString(message, replacement, denylist);
     copy.name = name;
 
     if (typeof stack === 'string') {
-      copy.stack = redactString(stack, replacement);
+      copy.stack = redactString(stack, replacement, denylist);
     }
 
     if (cause !== undefined) {
@@ -122,7 +126,7 @@ export function sanitize(entry: BrowserLogEntry, options: SanitizeOptions = {}):
   const result: BrowserLogEntry = { ...entry };
 
   if (entry.msg !== undefined) {
-    result.msg = redactString(entry.msg, replacement);
+    result.msg = redactString(entry.msg, replacement, denylist);
   }
 
   if (entry.context !== undefined) {
@@ -137,13 +141,33 @@ export function sanitize(entry: BrowserLogEntry, options: SanitizeOptions = {}):
 }
 
 /**
- * Redacts JWTs, bearer/basic credentials and sensitive query parameters from a string.
+ * Redacts from a string: JWTs, authorization credentials, sensitive parameters
+ * ("client_secret=", "x-api-key="...) and JSON properties whose key matches the
+ * denylist (e.g. a logged request body).
+ *
+ * @param denylist Normalized key fragments (lowercase, without "-" and "_").
  */
-export function redactString(value: string, replacement: string = DEFAULT_REPLACEMENT): string {
+export function redactString(
+  value: string,
+  replacement: string = DEFAULT_REPLACEMENT,
+  denylist: readonly string[] = DEFAULT_DENYLIST,
+): string {
   return value
     .replace(JWT_PATTERN, replacement)
+    .replace(AUTHORIZATION_PATTERN, (_, prefix, scheme) =>
+      scheme ? `${prefix}${scheme} ${replacement}` : `${prefix}${replacement}`,
+    )
     .replace(BEARER_PATTERN, (_, scheme) => `${scheme} ${replacement}`)
-    .replace(QUERY_PARAMETER_PATTERN, (match, prefix, key) => `${prefix}${key}=${replacement}`);
+    .replace(QUERY_PARAMETER_PATTERN, (_, prefix, key) => `${prefix}${key}=${replacement}`)
+    .replace(JSON_PROPERTY_PATTERN, (match, key, separator) =>
+      isDenied(key, denylist) ? `"${key}"${separator}"${replacement}"` : match,
+    );
+}
+
+function isDenied(key: string, denylist: readonly string[]): boolean {
+  const normalized = normalizeKey(key);
+
+  return denylist.some((fragment) => normalized.includes(fragment));
 }
 
 function normalizeKey(key: string): string {
