@@ -1,3 +1,21 @@
+## [1.6.0-beta.1](https://github.com/kuzzleio/kuzzle-logger/compare/v1.5.0...v1.6.0-beta.1) (2026-10-03)
+
+### Features
+
+* **browser:** limit batch size in bytes (maxBatchBytes) ([fbfbff9](https://github.com/kuzzleio/kuzzle-logger/commit/fbfbff9fbed05808324245469f40ae23765eaccc)), closes [#50](https://github.com/kuzzleio/kuzzle-logger/issues/50)
+
+### Bug Fixes
+
+* **browser:** never throw when getMergingObject throws ([7f05ef9](https://github.com/kuzzleio/kuzzle-logger/commit/7f05ef99f1b1e166a166576c2f4c3aea94d4a9ee)), closes [#47](https://github.com/kuzzleio/kuzzle-logger/issues/47)
+* **browser:** no re-entrant flush or request loop on failing batches ([afc7fca](https://github.com/kuzzleio/kuzzle-logger/commit/afc7fca018ad80a9a8c4ba3493cdc6740b707969)), closes [#48](https://github.com/kuzzleio/kuzzle-logger/issues/48)
+* **browser:** send every pending batch on pagehide, without waiting ([d325c50](https://github.com/kuzzleio/kuzzle-logger/commit/d325c508144a9ca7f432cce8fd5bc052ee9195cc)), closes [#49](https://github.com/kuzzleio/kuzzle-logger/issues/49)
+* child loggers follow the parent level ([e64bf81](https://github.com/kuzzleio/kuzzle-logger/commit/e64bf81e1d2949069ecc1e103b22d0bea32fe1c2)), closes [#55](https://github.com/kuzzleio/kuzzle-logger/issues/55)
+* **protocol:** denylist no longer redacts structural entry fields ([e62de3b](https://github.com/kuzzleio/kuzzle-logger/commit/e62de3b1f6bca01aeb107eec13f33170dc342dc5)), closes [#52](https://github.com/kuzzleio/kuzzle-logger/issues/52)
+* **protocol:** keep error fingerprints stable across deploys ([e749959](https://github.com/kuzzleio/kuzzle-logger/commit/e749959ab9790e40192a5dee4eadc46004986e58)), closes [#54](https://github.com/kuzzleio/kuzzle-logger/issues/54)
+* **protocol:** normalize namespaces and truncate deep values instead of rejecting ([c8445dd](https://github.com/kuzzleio/kuzzle-logger/commit/c8445dd62681dc5ff3fc85c53df9f302099948a6)), closes [#51](https://github.com/kuzzleio/kuzzle-logger/issues/51)
+* **protocol:** redact more sensitive parameters in strings ([b7416c3](https://github.com/kuzzleio/kuzzle-logger/commit/b7416c3314ada9dbd6b17ed1494228119767a965)), closes [#53](https://github.com/kuzzleio/kuzzle-logger/issues/53)
+* resolve extensionless deep imports again ([aa34635](https://github.com/kuzzleio/kuzzle-logger/commit/aa346353b65c61b89bf2abc9a5003b0ce4629d19)), closes [#56](https://github.com/kuzzleio/kuzzle-logger/issues/56)
+
 ## [1.5.0-beta.2](https://github.com/kuzzleio/kuzzle-logger/compare/v1.5.0-beta.1...v1.5.0-beta.2) (2026-10-02)
 
 ### Bug Fixes
