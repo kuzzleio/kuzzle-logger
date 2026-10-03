@@ -1,7 +1,13 @@
 // pino ships no typings for its browser build: the members used are typed below (PinoBrowserLogger).
 import pino from 'pino/browser.js';
 
-import { BROWSER_LOG_LEVELS, BrowserLogEntry, BrowserLogLevel } from '../protocol/payload.js';
+import {
+  BROWSER_LOG_LEVELS,
+  BrowserLogEntry,
+  BrowserLogLevel,
+  DEFAULT_MAX_DEPTH,
+  normalizeNamespace,
+} from '../protocol/payload.js';
 import { isErrorLike, serializeError } from '../serializeError.js';
 import { JSONObject } from '../types/JSONObject.js';
 
@@ -115,11 +121,26 @@ export class KuzzleLogger {
 
   private getMergingObject: () => JSONObject = () => ({});
 
+  /**
+   * Set on children: their level follows the parent one until it is set on the child.
+   */
+  private parent: KuzzleLogger | null = null;
+
+  private ownLevel: BrowserLoggerLevel | null = null;
+
   get level(): BrowserLoggerLevel {
+    if (this.parent) {
+      return this.ownLevel ?? this.parent.level;
+    }
+
     return this._pino.level as BrowserLoggerLevel;
   }
 
   set level(level: BrowserLoggerLevel) {
+    if (this.parent) {
+      this.ownLevel = level;
+    }
+
     this._pino.level = level;
   }
 
@@ -129,7 +150,7 @@ export class KuzzleLogger {
 
     if (getMergingObject || namespace) {
       this.getMergingObject = () => {
-        const mergingObject = getMergingObject?.() ?? {};
+        const mergingObject = callMergingObject(getMergingObject);
 
         return namespace && !mergingObject.namespace
           ? { ...mergingObject, namespace }
@@ -213,12 +234,15 @@ export class KuzzleLogger {
   /**
    * Creates a child logger whose namespace is "<parent namespace>:<namespace>".
    * The parent merging object is evaluated on each log, not at creation time.
+   * The child level follows the parent one, until it is set on the child.
    */
   child(namespace: string): KuzzleLogger {
     const childLogger = Object.create(KuzzleLogger.prototype) as KuzzleLogger;
 
     childLogger._pino = this._pino.child({});
     childLogger.output = this.output;
+    childLogger.parent = this;
+    childLogger.ownLevel = null;
     childLogger.getMergingObject = () => {
       const parentMergingObject = this.getMergingObject();
 
@@ -234,19 +258,28 @@ export class KuzzleLogger {
   }
 
   private log(level: BrowserLogLevel, objOrMsg: any, args: any[]): void {
-    if (typeof objOrMsg === 'object' && objOrMsg !== null) {
-      const message = args.shift();
+    try {
+      // pino children copy the parent level when they are created: apply the current one
+      if (this.parent && this._pino.level !== this.level) {
+        this._pino.level = this.level;
+      }
 
-      if (isErrorLike(objOrMsg)) {
-        this._pino[level](this.toLogObject({}, objOrMsg), message ?? objOrMsg.message, ...args);
+      if (typeof objOrMsg === 'object' && objOrMsg !== null) {
+        const message = args.shift();
+
+        if (isErrorLike(objOrMsg)) {
+          this._pino[level](this.toLogObject({}, objOrMsg), message ?? objOrMsg.message, ...args);
+          return;
+        }
+
+        this._pino[level](this.toLogObject(objOrMsg), message, ...args);
         return;
       }
 
-      this._pino[level](this.toLogObject(objOrMsg), message, ...args);
-      return;
+      this._pino[level](this.toLogObject({}), objOrMsg, ...args);
+    } catch {
+      // Logging must never break the application
     }
-
-    this._pino[level](this.toLogObject({}), objOrMsg, ...args);
   }
 
   private toLogObject(obj: JSONObject, err?: unknown): { [ENTRY]: PendingEntry } {
@@ -269,8 +302,11 @@ export class KuzzleLogger {
       entry.context = context;
     }
 
-    if (typeof namespace === 'string' && namespace.length > 0) {
-      entry.namespace = namespace;
+    // Normalized like the backend does, so that the console shows the logged namespace
+    const normalized = typeof namespace === 'string' ? normalizeNamespace(namespace) : undefined;
+
+    if (normalized) {
+      entry.namespace = normalized;
     }
 
     return { [ENTRY]: entry };
@@ -290,6 +326,29 @@ export function withoutConsoleMirroring(fn: () => void): void {
   } finally {
     consoleMirroringSuppressed = false;
   }
+}
+
+/**
+ * Calls the user merging object: it runs on each log, possibly before the
+ * application state it reads exists (e.g. before login). Errors and non-object
+ * results are ignored, so the entry is still logged, without it.
+ */
+function callMergingObject(getMergingObject?: () => JSONObject): JSONObject {
+  try {
+    const mergingObject: unknown = getMergingObject?.();
+
+    if (
+      typeof mergingObject === 'object' &&
+      mergingObject !== null &&
+      !Array.isArray(mergingObject)
+    ) {
+      return mergingObject as JSONObject;
+    }
+  } catch {
+    // Logging must never break the application
+  }
+
+  return {};
 }
 
 function emit(output: Output, logObject: LogObject): void {
@@ -351,8 +410,9 @@ function mirrorToConsole(level: BrowserLogLevel, msg: string | undefined, pendin
 
 /**
  * Converts a value to plain JSON: errors are serialized, dates become ISO strings,
- * bigints become strings, circular references become "[Circular]", and functions,
- * symbols and undefined values are dropped.
+ * bigints become strings, circular references become "[Circular]", objects and
+ * arrays nested deeper than the backend accepts become "[Object]" and "[Array]",
+ * and functions, symbols and undefined values are dropped.
  */
 function toJSON(value: unknown): unknown {
   // Objects being serialized, from the root to the current one: "value" is what was
@@ -376,6 +436,11 @@ function toJSON(value: unknown): unknown {
 
     if (ancestors.some((ancestor) => ancestor.original === item || ancestor.value === item)) {
       return '[Circular]';
+    }
+
+    // The ancestors are the objects holding the item: their count is its depth
+    if (ancestors.length >= DEFAULT_MAX_DEPTH) {
+      return Array.isArray(item) ? '[Array]' : '[Object]';
     }
 
     const result = isErrorLike(item) ? (serializeError(item) as object) : item;

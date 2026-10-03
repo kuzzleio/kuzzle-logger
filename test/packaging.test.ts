@@ -60,11 +60,14 @@ describe('packaging', () => {
       './browser',
       './kuzzle',
       './dist',
+      './dist/*.js',
+      './dist/*.d.ts',
       './dist/*',
       './package.json',
     ]);
 
-    for (const entry of ['.', './browser', './kuzzle', './dist']) {
+    // Extensionless deep imports resolve like before the exports map (1.4)
+    for (const entry of ['.', './browser', './kuzzle', './dist', './dist/*']) {
       expect(Object.keys(pkg.exports[entry])).toEqual(['types', 'default']);
     }
 

@@ -47,11 +47,11 @@ The action returns the number of accepted entries and the rejected ones, with th
 ```json
 {
   "accepted": 19,
-  "rejected": [{ "index": 4, "reason": "\"context\" is too deep (max depth 5)" }]
+  "rejected": [{ "index": 4, "reason": "\"context\" must be a plain JSON object" }]
 }
 ```
 
-An invalid batch (wrong version, too many entries, payload too large...) is rejected as a whole. An invalid entry only rejects that entry.
+An invalid batch (wrong version, too many entries, payload too large...) is rejected as a whole. An invalid entry only rejects that entry. Some values are normalized instead of being rejected: long strings are truncated, objects deeper than `maxContextDepth` are replaced with `"[Truncated]"`, and invalid namespace characters are replaced with `_` (namespaces are truncated to 64 characters).
 
 ## Rights
 
@@ -124,7 +124,7 @@ The browser cannot set any other field: everything it sends is nested under `con
 
 The fingerprint groups occurrences of the same problem:
 
-- for an error: its name, its normalized message and the top stack frame (without query string, hash or build hash in the file name);
+- for an error: its name, its normalized message and the function and file of the top stack frame. The query string, the hash, the build hash of the file name (`index-B3x_9aZq.js`, `main.0123456789abcdef0123.js`), the line and the column are removed, so the fingerprint stays the same across deploys. Two errors with the same name and message thrown from the same function of the same file share a fingerprint;
 - otherwise: the level, the namespace and the normalized message.
 
 Messages are normalized by replacing numbers, UUIDs, hexadecimal IDs, quoted strings and URLs with placeholders, so `Asset 42 not found` and `Asset 43 not found` share a fingerprint.
@@ -137,14 +137,14 @@ Since the namespace can be a transport label (for example with the Loki preset a
 
 ## Limits
 
-| Limit              | Default | Behavior                                                                   |
-| ------------------ | ------- | -------------------------------------------------------------------------- |
-| `maxEntries`       | `100`   | Maximum entries per batch. Larger batches are rejected.                    |
-| `maxPayloadSize`   | `65536` | Maximum JSON size of a batch, in characters. Larger batches are rejected.  |
-| `maxContextDepth`  | `5`     | Maximum nesting depth of `context` and `err`. Deeper entries are rejected. |
-| `maxMessageLength` | `2048`  | `msg` and `err.message` are truncated beyond it.                           |
-| `maxStackLength`   | `8192`  | `err.stack` is truncated beyond it.                                        |
-| `levels`           | all     | Levels accepted from the browser. Entries with other levels are rejected.  |
+| Limit              | Default | Behavior                                                                                        |
+| ------------------ | ------- | ----------------------------------------------------------------------------------------------- |
+| `maxEntries`       | `100`   | Maximum entries per batch. Larger batches are rejected.                                         |
+| `maxPayloadSize`   | `65536` | Maximum JSON size of a batch, in characters. Larger batches are rejected.                       |
+| `maxContextDepth`  | `5`     | Maximum nesting depth of `context` and `err`. Deeper objects are replaced with `"[Truncated]"`. |
+| `maxMessageLength` | `2048`  | `msg` and `err.message` are truncated beyond it.                                                |
+| `maxStackLength`   | `8192`  | `err.stack` is truncated beyond it.                                                             |
+| `levels`           | all     | Levels accepted from the browser. Entries with other levels are rejected.                       |
 
 For example, to only accept warnings and errors from the browser:
 
@@ -161,8 +161,8 @@ When the browser buffer overflows, the next batch says how many entries were dro
 
 Before it is logged, every entry is sanitized:
 
-- values of keys containing `apikey`, `authorization`, `cookie`, `credential`, `jwt`, `passwd`, `password`, `secret`, `sessionid` or `token` are replaced with `[REDACTED]`, in `context` and `err` (case-insensitive, `-` and `_` ignored: `accessToken`, `x-api-key` and `Set-Cookie` match);
-- JWTs, `Bearer` and `Basic` credentials and sensitive query parameters (`token=`, `api_key=`, `password=`...) are redacted from every string, including `msg` and stacks.
+- values of keys containing `apikey`, `authorization`, `cookie`, `credential`, `jwt`, `passwd`, `password`, `secret`, `sessionid` or `token` are replaced with `[REDACTED]`, in `context` and in the custom properties of `err` and its causes (case-insensitive, `-` and `_` ignored: `accessToken`, `x-api-key` and `Set-Cookie` match). `level`, `namespace`, `time` and error names and messages are never redacted by key, so a `denylist` entry such as `name` or `age` only applies to `context` and error properties;
+- JWTs, `Authorization` credentials (`Bearer`, `Basic`, `Token`...), parameters whose name ends with `token`, `secret`, `password`, `passwd`, `apikey` or `jwt` (`access_token=`, `client_secret=`, `x-api-key=`...) and JSON properties whose key matches the denylist (`"password":"..."` in a logged request body) are redacted from every string, including `msg` and stacks.
 
 ```typescript
 createBrowserLogsController(app.log, {

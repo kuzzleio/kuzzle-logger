@@ -25,12 +25,10 @@ The default preset that outputs logs to the standard output.
 
 #### Behavior
 
-- In development environment (`NODE_ENV=development`):
-  - Uses `pino-pretty` for formatted output
-  - Minimum level set to `trace`
-- In other environments:
-  - Uses `pino/file` with destination to stdout
-  - Default level is `info`
+- When `NODE_ENV` is `development` or not set: entries are pretty-printed with `pino-pretty`, which must be installed (`npm install pino-pretty`).
+- Otherwise: entries are written to stdout as JSON lines.
+
+The default level is `info` in both cases.
 
 ### 2. Kuzzle Elasticsearch Preset
 
@@ -76,6 +74,22 @@ Configures logging to Grafana Loki.
 ```
 
 The `service_name` label is set from `serviceName` when it is defined, unless `labels.service_name` is provided.
+
+### 4. File Preset
+
+Writes entries to a file, as JSON lines.
+
+```typescript
+{
+  preset: 'file';
+  level?: string;
+  presetOptions: {
+    destination: string | number; // Required - file path, or file descriptor (1 = stdout, 2 = stderr)
+    mkdir?: boolean;             // Create the directory if needed. Defaults to true
+    append?: boolean;            // Append to the file instead of overwriting it. Defaults to true
+  };
+}
+```
 
 The `kuzzle-elasticsearch` (`node`), `loki` (`host`) and `file` (`destination`) presets throw an explicit error when their required option is missing.
 

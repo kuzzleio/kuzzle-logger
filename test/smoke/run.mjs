@@ -44,7 +44,7 @@ try {
   symlinkSync(root, join(dir, 'node_modules', 'kuzzle-logger'), 'dir');
   write('package.json', '{ "private": true }');
 
-  step('Node CJS: kuzzle-logger, kuzzle-logger/kuzzle, kuzzle-logger/dist', () => {
+  step('Node CJS: kuzzle-logger, kuzzle-logger/kuzzle, kuzzle-logger/dist and deep imports', () => {
     write(
       'cjs.cjs',
       `
@@ -52,6 +52,12 @@ try {
       assert.strictEqual(typeof require('kuzzle-logger').KuzzleLogger, 'function');
       assert.strictEqual(typeof require('kuzzle-logger/dist').KuzzleLogger, 'function');
       assert.strictEqual(typeof require('kuzzle-logger/kuzzle').validateBatch, 'function');
+      // Deep imports, with and without extension (as with 1.4, before the exports map)
+      assert.strictEqual(typeof require('kuzzle-logger/dist/index').KuzzleLogger, 'function');
+      assert.strictEqual(typeof require('kuzzle-logger/dist/KuzzleLogger').KuzzleLogger, 'function');
+      assert.strictEqual(typeof require('kuzzle-logger/dist/KuzzleLogger.js').KuzzleLogger, 'function');
+      assert.strictEqual(typeof require('kuzzle-logger/dist/Presets').Presets, 'function');
+      require('kuzzle-logger/dist/types/KuzzleLoggerConfig');
       `,
     );
     run(['cjs.cjs']);
@@ -65,7 +71,9 @@ try {
       import { KuzzleLogger } from 'kuzzle-logger';
       import { validateBatch } from 'kuzzle-logger/kuzzle';
       import { KuzzleLogger as BrowserLogger, PAYLOAD_VERSION } from 'kuzzle-logger/browser';
+      import deep from 'kuzzle-logger/dist/KuzzleLogger';
       assert.strictEqual(typeof KuzzleLogger, 'function');
+      assert.strictEqual(deep.KuzzleLogger, KuzzleLogger);
       const entries = [];
       new BrowserLogger({ console: false, sender: { send: (entry) => entries.push(entry) } }).info('hi');
       assert.strictEqual(entries[0].msg, 'hi');
@@ -80,6 +88,9 @@ try {
     const imports = `
       import { KuzzleLogger } from 'kuzzle-logger';
       import { KuzzleLogger as Legacy } from 'kuzzle-logger/dist';
+      import { KuzzleLogger as Deep } from 'kuzzle-logger/dist/KuzzleLogger';
+      import { KuzzleLogger as DeepJs } from 'kuzzle-logger/dist/KuzzleLogger.js';
+      import { KuzzleLoggerConfig } from 'kuzzle-logger/dist/types/KuzzleLoggerConfig';
       import { validateBatch, BatchValidationResult } from 'kuzzle-logger/kuzzle';
       import { KuzzleLogger as BrowserLogger, PAYLOAD_VERSION, BrowserLogsPayload, VueErrorHandler, captureGlobalErrors, createVueErrorHandler } from 'kuzzle-logger/browser';
       const browserLogger: BrowserLogger = new BrowserLogger({ console: 'warn', level: 'debug' });
@@ -90,7 +101,8 @@ try {
       stop();
       const payload: BrowserLogsPayload = { entries: [{ level: 'error' }], version: PAYLOAD_VERSION };
       const result: BatchValidationResult = validateBatch(payload);
-      export const used = [KuzzleLogger, Legacy, result];
+      const config: KuzzleLoggerConfig = { level: 'info' };
+      export const used = [KuzzleLogger, Legacy, Deep, DeepJs, config, result];
     `;
     write('types.ts', imports);
     write('types.mts', imports);

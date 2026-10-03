@@ -1,11 +1,14 @@
 import { JSONObject } from '../types/JSONObject.js';
+import { DEFAULT_MAX_MESSAGE_LENGTH, DEFAULT_MAX_STACK_LENGTH, truncate } from './limits.js';
 import {
   BROWSER_LOG_LEVELS,
   BrowserLogEntry,
   BrowserLogError,
   BrowserLogLevel,
   BrowserLogsApp,
+  DEFAULT_MAX_DEPTH,
   PAYLOAD_VERSION,
+  normalizeNamespace,
 } from './payload.js';
 
 export type BatchLimits = {
@@ -15,7 +18,8 @@ export type BatchLimits = {
    */
   levels?: readonly BrowserLogLevel[];
   /**
-   * Maximum nesting depth of an entry "context" object.
+   * Maximum nesting depth of an entry "context" and "err". Deeper objects and arrays
+   * are replaced with "[Truncated]".
    * @default 5
    */
   maxContextDepth?: number;
@@ -43,11 +47,11 @@ export type BatchLimits = {
 
 export const DEFAULT_BATCH_LIMITS: Required<BatchLimits> = {
   levels: BROWSER_LOG_LEVELS,
-  maxContextDepth: 5,
+  maxContextDepth: DEFAULT_MAX_DEPTH,
   maxEntries: 100,
-  maxMessageLength: 2048,
+  maxMessageLength: DEFAULT_MAX_MESSAGE_LENGTH,
   maxPayloadSize: 65536,
-  maxStackLength: 8192,
+  maxStackLength: DEFAULT_MAX_STACK_LENGTH,
 };
 
 export type RejectedEntry = {
@@ -64,16 +68,13 @@ export type BatchValidationResult =
       app?: BrowserLogsApp;
       dropped?: number;
       /**
-       * Valid entries, normalized: unknown keys removed, long strings truncated.
+       * Valid entries, normalized: unknown keys removed, long strings and deep objects
+       * truncated, namespaces normalized (see normalizeNamespace).
        */
       entries: BrowserLogEntry[];
       rejected: RejectedEntry[];
       valid: true;
     };
-
-const NAMESPACE_PATTERN = /^[a-zA-Z0-9:_-]{1,64}$/;
-
-const TRUNCATED_SUFFIX = '…[truncated]';
 
 /**
  * Keys that must never be copied, to prevent prototype pollution.
@@ -176,11 +177,16 @@ function validateEntry(entry: unknown, options: Required<BatchLimits>): BrowserL
   }
 
   if (entry.namespace !== undefined) {
-    if (typeof entry.namespace !== 'string' || !NAMESPACE_PATTERN.test(entry.namespace)) {
-      throw new EntryError(`"namespace" must match ${NAMESPACE_PATTERN}`);
+    if (typeof entry.namespace !== 'string') {
+      throw new EntryError('"namespace" must be a string');
     }
 
-    result.namespace = entry.namespace;
+    // Normalized rather than rejected: older browsers send namespaces such as "MapView.vue"
+    const namespace = normalizeNamespace(entry.namespace);
+
+    if (namespace) {
+      result.namespace = namespace;
+    }
   }
 
   if (entry.context !== undefined) {
@@ -235,7 +241,8 @@ function validateApp(app: unknown, options: Required<BatchLimits>): BrowserLogsA
 }
 
 /**
- * Deep copies a JSON value, rejecting non-JSON values and objects deeper than maxDepth.
+ * Deep copies a JSON value, rejecting non-JSON values. Objects and arrays deeper
+ * than maxDepth are replaced with "[Truncated]".
  */
 function copyJSON(value: unknown, maxDepth: number, path: string, depth = 0): unknown {
   if (value === null || typeof value === 'string' || typeof value === 'boolean') {
@@ -255,7 +262,7 @@ function copyJSON(value: unknown, maxDepth: number, path: string, depth = 0): un
   }
 
   if (depth >= maxDepth) {
-    throw new EntryError(`${path} is too deep (max depth ${maxDepth})`);
+    return '[Truncated]';
   }
 
   if (Array.isArray(value)) {
@@ -293,12 +300,4 @@ function serializedSize(value: unknown): number | null {
   } catch {
     return null;
   }
-}
-
-function truncate(value: string, maxLength: number): string {
-  if (value.length <= maxLength) {
-    return value;
-  }
-
-  return value.slice(0, Math.max(0, maxLength - TRUNCATED_SUFFIX.length)) + TRUNCATED_SUFFIX;
 }

@@ -52,7 +52,7 @@ export const logger = new KuzzleLogger({
 | `level`            | `info`  | Minimum level of the logged entries: `trace`, `debug`, `info`, `warn`, `error`, `fatal` or `silent`. It can be changed at runtime with `logger.level = 'debug'`.            |
 | `console`          | `true`  | Prints entries to the devtools console: `true` for every logged entry, `false` for none, or a level (entries at or above it). Only entries at or above `level` are printed. |
 | `namespace`        | –       | Base namespace of the entries.                                                                                                                                              |
-| `getMergingObject` | –       | Called on each log: its result is merged into the entry `context` (e.g. the current route).                                                                                 |
+| `getMergingObject` | –       | Called on each log: its result is merged into the entry `context` (e.g. the current route). If it throws or does not return an object, the entry is logged without it.      |
 | `sender`           | –       | Where entries are sent. Without a sender, the logger only prints to the console.                                                                                            |
 
 ## Logging
@@ -74,6 +74,11 @@ const mapLogger = logger.child('map'); // namespace: "dashboard:map"
 mapLogger.warn('No asset to display');
 ```
 
+- Namespaces may only contain letters, digits, `:`, `_` and `-`, up to 64 characters in total (with the parent namespaces): other characters are replaced with `_` (`MapView.vue` becomes `MapView_vue`) and longer namespaces are truncated. Keep them static, e.g. `map`, not `map-${mapId}`.
+- `context` and errors (with their `cause` chain) are kept up to 5 levels deep: deeper objects and arrays are replaced with `[Object]` and `[Array]`.
+- Unlike `console.log`, extra arguments are only used for `%s`/`%d`/`%o` placeholders in the message: `logger.info('Loaded', data)` drops `data`. Write `logger.info({ data }, 'Loaded')`.
+- A child logger follows the level of its parent, until its own level is set (`child.level = 'debug'`).
+
 Errors are serialized with their name, message, stack, cause and custom properties. Each entry is sent with this shape (payload v1):
 
 ```json
@@ -91,17 +96,17 @@ Errors are serialized with their name, message, stack, cause and custom properti
 }
 ```
 
-Logging never throws, even when the sender fails.
+Logging never throws, even when `getMergingObject` or the sender fails.
 
 ## Senders
 
 Senders buffer entries and send them in batches:
 
-- when `maxBatchSize` entries are pending, or `flushInterval` after the first one;
+- when a batch is full (`maxBatchSize` entries or `maxBatchBytes` bytes), or `flushInterval` after the first entry;
 - immediately for `error` and `fatal` entries;
-- when the page is hidden or closed (`pagehide`, `visibilitychange`), with `fetch` `keepalive`.
+- when the page is hidden or closed (`pagehide`, `visibilitychange`), with `fetch` `keepalive`: every pending batch at once, within the browser keepalive limit (64 KB in total). A batch still in flight is sent again, since the page may be gone before it completes: the backend can receive it twice.
 
-Failed batches are retried with an exponential backoff. Rejected batches (4xx responses, except 408 and 429) are not retried. Senders never log, so a failing backend cannot cause a logging loop.
+Failed batches are retried with an exponential backoff. Rejected batches (4xx responses, except 408 and 429) are not retried. Senders never log, so a failing backend cannot cause a logging loop. After a dropped batch, `error` and `fatal` entries wait for `flushInterval` instead of being sent immediately, until a batch is sent again: an application that logs its failed requests at `error` level does not start a request loop. One batch is sent at a time: entries logged while it is in flight, even by the transport itself, go in the next one.
 
 ### Kuzzle SDK sender
 
@@ -126,14 +131,15 @@ Failed batches are retried with an exponential backoff. Rejected batches (4xx re
 
 Both senders accept these options:
 
-| Option          | Default | Description                                                                                                                 |
-| --------------- | ------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `app`           | –       | `{ name, version }` of the frontend, sent with each batch. Informational.                                                   |
-| `flushInterval` | `5000`  | Delay before sending a batch that is not full, in milliseconds.                                                             |
-| `maxBatchSize`  | `20`    | Maximum number of entries per batch. Keep it below the backend `limits.maxEntries` (100 by default).                        |
-| `maxBufferSize` | `500`   | Maximum number of entries kept in memory. The oldest entries are dropped first, and the backend logs how many were dropped. |
-| `maxRetries`    | `3`     | Retries of a failed batch before it is dropped.                                                                             |
-| `retryDelay`    | `1000`  | First retry delay, in milliseconds. It doubles at each attempt, up to 60 seconds.                                           |
+| Option          | Default | Description                                                                                                                                                                                                                                  |
+| --------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app`           | –       | `{ name, version }` of the frontend, sent with each batch. Informational.                                                                                                                                                                    |
+| `flushInterval` | `5000`  | Delay before sending a batch that is not full, in milliseconds.                                                                                                                                                                              |
+| `maxBatchBytes` | `60000` | Maximum size of a batch (JSON, in bytes). Keep it below the backend `limits.maxPayloadSize` (65536 by default). A larger entry is reduced to its level, time, namespace, message and error (truncated), with `context: { truncated: true }`. |
+| `maxBatchSize`  | `20`    | Maximum number of entries per batch. Keep it below the backend `limits.maxEntries` (100 by default).                                                                                                                                         |
+| `maxBufferSize` | `500`   | Maximum number of entries kept in memory. The oldest entries are dropped first, and the backend logs how many were dropped.                                                                                                                  |
+| `maxRetries`    | `3`     | Retries of a failed batch before it is dropped.                                                                                                                                                                                              |
+| `retryDelay`    | `1000`  | First retry delay, in milliseconds. It doubles at each attempt, up to 60 seconds.                                                                                                                                                            |
 
 `await logger.flush()` sends the pending entries. `sender.close()` stops the timers and removes the page listeners, without sending the pending entries (call `flush()` first).
 
