@@ -47,11 +47,11 @@ The action returns the number of accepted entries and the rejected ones, with th
 ```json
 {
   "accepted": 19,
-  "rejected": [{ "index": 4, "reason": "\"context\" is too deep (max depth 5)" }]
+  "rejected": [{ "index": 4, "reason": "\"context\" must be a plain JSON object" }]
 }
 ```
 
-An invalid batch (wrong version, too many entries, payload too large...) is rejected as a whole. An invalid entry only rejects that entry.
+An invalid batch (wrong version, too many entries, payload too large...) is rejected as a whole. An invalid entry only rejects that entry. Some values are normalized instead of being rejected: long strings are truncated, objects deeper than `maxContextDepth` are replaced with `"[Truncated]"`, and invalid namespace characters are replaced with `_` (namespaces are truncated to 64 characters).
 
 ## Rights
 
@@ -137,14 +137,14 @@ Since the namespace can be a transport label (for example with the Loki preset a
 
 ## Limits
 
-| Limit              | Default | Behavior                                                                   |
-| ------------------ | ------- | -------------------------------------------------------------------------- |
-| `maxEntries`       | `100`   | Maximum entries per batch. Larger batches are rejected.                    |
-| `maxPayloadSize`   | `65536` | Maximum JSON size of a batch, in characters. Larger batches are rejected.  |
-| `maxContextDepth`  | `5`     | Maximum nesting depth of `context` and `err`. Deeper entries are rejected. |
-| `maxMessageLength` | `2048`  | `msg` and `err.message` are truncated beyond it.                           |
-| `maxStackLength`   | `8192`  | `err.stack` is truncated beyond it.                                        |
-| `levels`           | all     | Levels accepted from the browser. Entries with other levels are rejected.  |
+| Limit              | Default | Behavior                                                                                        |
+| ------------------ | ------- | ----------------------------------------------------------------------------------------------- |
+| `maxEntries`       | `100`   | Maximum entries per batch. Larger batches are rejected.                                         |
+| `maxPayloadSize`   | `65536` | Maximum JSON size of a batch, in characters. Larger batches are rejected.                       |
+| `maxContextDepth`  | `5`     | Maximum nesting depth of `context` and `err`. Deeper objects are replaced with `"[Truncated]"`. |
+| `maxMessageLength` | `2048`  | `msg` and `err.message` are truncated beyond it.                                                |
+| `maxStackLength`   | `8192`  | `err.stack` is truncated beyond it.                                                             |
+| `levels`           | all     | Levels accepted from the browser. Entries with other levels are rejected.                       |
 
 For example, to only accept warnings and errors from the browser:
 

@@ -113,8 +113,7 @@ describe('validateBatch', () => {
           { level: 'verbose' },
           { level: 'info', msg: 42 },
           { level: 'info', time: 'yesterday' },
-          { level: 'info', namespace: 'with spaces' },
-          { level: 'info', namespace: 'x'.repeat(65) },
+          { level: 'info', namespace: 42 },
           { context: 'nope', level: 'info' },
           { context: [1, 2], level: 'info' },
           { err: 'boom', level: 'error' },
@@ -128,9 +127,7 @@ describe('validateBatch', () => {
         { level: 'info', msg: 'ok' },
         { level: 'warn', msg: 'ok too' },
       ]);
-      expect(result.rejected.map(({ index }) => index)).toEqual([
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
-      ]);
+      expect(result.rejected.map(({ index }) => index)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
       expect(result.rejected.every(({ reason }) => typeof reason === 'string')).toBe(true);
     });
 
@@ -174,15 +171,56 @@ describe('validateBatch', () => {
       expect(entry.err?.stack).toHaveLength(60);
     });
 
-    it('rejects contexts deeper than maxContextDepth', () => {
-      const deep = { a: { b: { c: { d: 1 } } } };
+    it('normalizes namespaces instead of rejecting them', () => {
+      const result = validEntries(
+        batch([
+          { level: 'info', namespace: 'MapView.vue' },
+          { level: 'info', namespace: 'dashboard:Map View' },
+          { level: 'info', namespace: 'x'.repeat(65) },
+          { level: 'info', namespace: '' },
+        ]),
+      );
+
+      expect(result.rejected).toEqual([]);
+      expect(result.entries).toEqual([
+        { level: 'info', namespace: 'MapView_vue' },
+        { level: 'info', namespace: 'dashboard:Map_View' },
+        { level: 'info', namespace: 'x'.repeat(64) },
+        { level: 'info' },
+      ]);
+    });
+
+    it('truncates contexts deeper than maxContextDepth instead of rejecting them', () => {
+      const deep = { a: { b: { c: { d: 1 } } }, list: [[[[1]]]] };
 
       expect(
         validateBatch(batch([{ context: deep, level: 'info' }]), { maxContextDepth: 3 }),
-      ).toMatchObject({ entries: [], rejected: [{ index: 0 }] });
+      ).toMatchObject({
+        entries: [{ context: { a: { b: { c: '[Truncated]' } }, list: [['[Truncated]']] } }],
+        rejected: [],
+      });
       expect(
-        validateBatch(batch([{ context: deep, level: 'info' }]), { maxContextDepth: 4 }),
+        validateBatch(batch([{ context: deep, level: 'info' }]), { maxContextDepth: 5 }),
       ).toMatchObject({ entries: [{ context: deep }], rejected: [] });
+    });
+
+    it('truncates long error cause chains instead of rejecting the entry', () => {
+      let err: Record<string, unknown> = { message: 'root', name: 'Error' };
+
+      for (let i = 1; i <= 7; i++) {
+        err = { cause: err, message: `level ${i}`, name: 'Error' };
+      }
+
+      const result = validEntries(batch([{ err, level: 'error' }]));
+      const causes: unknown[] = [];
+
+      for (let cause = result.entries[0].err?.cause; cause; cause = (cause as any).cause) {
+        causes.push(typeof cause === 'string' ? cause : (cause as any).message);
+      }
+
+      expect(result.rejected).toEqual([]);
+      expect(result.entries[0].err?.message).toBe('level 7');
+      expect(causes).toEqual(['level 6', 'level 5', 'level 4', 'level 3', '[Truncated]']);
     });
 
     it('rejects non-JSON context values', () => {

@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BrowserLogSender, KuzzleLogger } from '../src/browser';
-import { BrowserLogEntry } from '../src/protocol';
+import { BrowserLogEntry, validateBatch } from '../src/protocol';
 
 function memorySender(): BrowserLogSender & { entries: BrowserLogEntry[] } {
   const entries: BrowserLogEntry[] = [];
@@ -280,6 +280,34 @@ describe('browser KuzzleLogger', () => {
       };
 
       expect(() => logger.info('value: %s', hostile)).not.toThrow();
+    });
+
+    it('produces entries the backend accepts: namespaces and depth', () => {
+      const { entries, logger } = setup({ namespace: 'dashboard' });
+      let err = new Error('root');
+
+      for (let i = 1; i <= 7; i++) {
+        err = new Error(`level ${i}`, { cause: err });
+      }
+
+      logger.child('MapView.vue').info('dot');
+      logger.child('Map View').child('x'.repeat(80)).info('space and length');
+      logger.info({ a: { b: { c: { d: { e: { f: 1 } } } } }, list: [[[[[[1]]]]]] }, 'deep');
+      logger.error(err);
+
+      const result = validateBatch({ entries, version: 1 });
+
+      expect(result).toMatchObject({ rejected: [], valid: true });
+      expect(entries.map((entry) => entry.namespace)).toEqual([
+        'dashboard:MapView_vue',
+        `dashboard:Map_View:${'x'.repeat(64 - 'dashboard:Map_View:'.length)}`,
+        'dashboard',
+        'dashboard',
+      ]);
+      expect(entries[2].context).toEqual({
+        a: { b: { c: { d: { e: '[Object]' } } } },
+        list: [[[['[Array]']]]],
+      });
     });
 
     it('lets children have their own level', () => {

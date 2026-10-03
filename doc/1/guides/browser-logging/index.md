@@ -74,7 +74,8 @@ const mapLogger = logger.child('map'); // namespace: "dashboard:map"
 mapLogger.warn('No asset to display');
 ```
 
-- Namespaces may only contain letters, digits, `:`, `_` and `-`, up to 64 characters in total (with the parent namespaces): the backend rejects the other entries. Keep them static, e.g. `map`, not `MapView.vue` or `map-${mapId}`.
+- Namespaces may only contain letters, digits, `:`, `_` and `-`, up to 64 characters in total (with the parent namespaces): other characters are replaced with `_` (`MapView.vue` becomes `MapView_vue`) and longer namespaces are truncated. Keep them static, e.g. `map`, not `map-${mapId}`.
+- `context` and errors (with their `cause` chain) are kept up to 5 levels deep: deeper objects and arrays are replaced with `[Object]` and `[Array]`.
 - Unlike `console.log`, extra arguments are only used for `%s`/`%d`/`%o` placeholders in the message: `logger.info('Loaded', data)` drops `data`. Write `logger.info({ data }, 'Loaded')`.
 - A child logger keeps the level it had when it was created: set `logger.level` before creating children.
 

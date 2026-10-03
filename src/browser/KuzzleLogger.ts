@@ -1,7 +1,13 @@
 // pino ships no typings for its browser build: the members used are typed below (PinoBrowserLogger).
 import pino from 'pino/browser.js';
 
-import { BROWSER_LOG_LEVELS, BrowserLogEntry, BrowserLogLevel } from '../protocol/payload.js';
+import {
+  BROWSER_LOG_LEVELS,
+  BrowserLogEntry,
+  BrowserLogLevel,
+  DEFAULT_MAX_DEPTH,
+  normalizeNamespace,
+} from '../protocol/payload.js';
 import { isErrorLike, serializeError } from '../serializeError.js';
 import { JSONObject } from '../types/JSONObject.js';
 
@@ -273,8 +279,11 @@ export class KuzzleLogger {
       entry.context = context;
     }
 
-    if (typeof namespace === 'string' && namespace.length > 0) {
-      entry.namespace = namespace;
+    // Normalized like the backend does, so that the console shows the logged namespace
+    const normalized = typeof namespace === 'string' ? normalizeNamespace(namespace) : undefined;
+
+    if (normalized) {
+      entry.namespace = normalized;
     }
 
     return { [ENTRY]: entry };
@@ -378,8 +387,9 @@ function mirrorToConsole(level: BrowserLogLevel, msg: string | undefined, pendin
 
 /**
  * Converts a value to plain JSON: errors are serialized, dates become ISO strings,
- * bigints become strings, circular references become "[Circular]", and functions,
- * symbols and undefined values are dropped.
+ * bigints become strings, circular references become "[Circular]", objects and
+ * arrays nested deeper than the backend accepts become "[Object]" and "[Array]",
+ * and functions, symbols and undefined values are dropped.
  */
 function toJSON(value: unknown): unknown {
   // Objects being serialized, from the root to the current one: "value" is what was
@@ -403,6 +413,11 @@ function toJSON(value: unknown): unknown {
 
     if (ancestors.some((ancestor) => ancestor.original === item || ancestor.value === item)) {
       return '[Circular]';
+    }
+
+    // The ancestors are the objects holding the item: their count is its depth
+    if (ancestors.length >= DEFAULT_MAX_DEPTH) {
+      return Array.isArray(item) ? '[Array]' : '[Object]';
     }
 
     const result = isErrorLike(item) ? (serializeError(item) as object) : item;
