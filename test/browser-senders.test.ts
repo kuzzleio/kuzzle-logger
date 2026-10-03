@@ -229,6 +229,38 @@ describe('createBatchingSender', () => {
     expect(calls[2].payload).not.toHaveProperty('dropped');
   });
 
+  it('flush() sends immediately during a retry backoff', async () => {
+    const { calls, transport } = recorder((call) => (call === 1 ? new Error('offline') : null));
+    sender = createBatchingSender(transport, { retryDelay: 10000 });
+
+    sender.send({ level: 'error', msg: 'a' });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(calls).toHaveLength(1);
+
+    sender.send(info('b'));
+    await sender.flush();
+
+    expect(calls).toHaveLength(2);
+    expect(msgs(calls[1].payload)).toEqual(['a', 'b']);
+
+    // The backoff timer is cancelled: nothing is sent twice
+    sender.close();
+    await vi.advanceTimersByTimeAsync(20000);
+    expect(calls).toHaveLength(2);
+  });
+
+  it('flush() then close() does not lose the entries buffered during a backoff', async () => {
+    const { calls, transport } = recorder((call) => (call === 1 ? new Error('offline') : null));
+    sender = createBatchingSender(transport, { retryDelay: 10000 });
+
+    sender.send({ level: 'error', msg: 'a' });
+    await vi.advanceTimersByTimeAsync(0);
+    await sender.flush();
+    sender.close();
+
+    expect(calls.flatMap(({ payload }) => msgs(payload))).toEqual(['a', 'a']);
+  });
+
   it('drops a batch after maxRetries, and reports it as dropped', async () => {
     const { calls, transport } = recorder((call) => (call <= 2 ? new Error('offline') : null));
     sender = createBatchingSender(transport, { maxRetries: 1, retryDelay: 10 });
