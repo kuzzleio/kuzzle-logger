@@ -24,6 +24,19 @@ items that cannot be tracked here. Update it when a phase completes or the scope
 | 4. Ingestion | [#18](https://github.com/kuzzleio/kuzzle-logger/issues/18) | v1 payload schema, validation, sanitization, fingerprint | – | ✅ Done ([PR #34](https://github.com/kuzzleio/kuzzle-logger/pull/34)) |
 | 4. Ingestion | [#19](https://github.com/kuzzleio/kuzzle-logger/issues/19) | `createBrowserLogsController` | #18, #21, #22 | ✅ Done ([PR #36](https://github.com/kuzzleio/kuzzle-logger/pull/36)) |
 | 5. Docs | [#20](https://github.com/kuzzleio/kuzzle-logger/issues/20) | Guides and Grafana queries | #16, #19 | ✅ Done |
+| 6. Hardening | [#47](https://github.com/kuzzleio/kuzzle-logger/issues/47) | Browser logging throws when `getMergingObject` throws | – | ⬜ Todo |
+| 6. Hardening | [#48](https://github.com/kuzzleio/kuzzle-logger/issues/48) | Re-entrant flush when the transport logs synchronously | – | ⬜ Todo |
+| 6. Hardening | [#49](https://github.com/kuzzleio/kuzzle-logger/issues/49) | Entries lost on `pagehide` while a request is in flight | – | ⬜ Todo |
+| 6. Hardening | [#50](https://github.com/kuzzleio/kuzzle-logger/issues/50) | Limit batch size in bytes | – | ⬜ Todo |
+| 6. Hardening | [#51](https://github.com/kuzzleio/kuzzle-logger/issues/51) | Browser entries silently rejected by the backend (namespace, depth) | – | ⬜ Todo |
+| 6. Hardening | [#52](https://github.com/kuzzleio/kuzzle-logger/issues/52) | Custom sanitize denylist redacts protocol fields | – | ⬜ Todo |
+| 6. Hardening | [#53](https://github.com/kuzzleio/kuzzle-logger/issues/53) | Sensitive query parameters not redacted | – | ⬜ Todo |
+| 6. Hardening | [#54](https://github.com/kuzzleio/kuzzle-logger/issues/54) | Fingerprints change across deploys | – | ⬜ Todo |
+| 6. Hardening | [#55](https://github.com/kuzzleio/kuzzle-logger/issues/55) | Child loggers keep the level they had when created | – | ⬜ Todo |
+| 6. Hardening | [#56](https://github.com/kuzzleio/kuzzle-logger/issues/56) | Extensionless deep imports no longer resolve since 1.5.0 | – | ⬜ Todo |
+| 6. Hardening | [#57](https://github.com/kuzzleio/kuzzle-logger/issues/57) | Ingestion hardening for anonymous users | – | ⬜ Todo |
+| 6. Hardening | [#58](https://github.com/kuzzleio/kuzzle-logger/issues/58) | Flush, capture and Vue handler improvements | – | ⬜ Todo |
+| 6. Hardening | [#59](https://github.com/kuzzleio/kuzzle-logger/issues/59) | CI release workflow follow-ups | – | ⬜ Todo |
 
 Status legend: ⬜ Todo · 🟦 In progress · ✅ Done · ⏸️ Blocked
 
@@ -51,3 +64,4 @@ These items are opened and tracked in their own repositories. Add the issue link
 | Date | Decision |
 |---|---|
 | 2026-10-01 | ADR-0001 accepted: browser logs go through the application's Kuzzle backend. The browser logger and the ingestion controller both live in this package. v1 stays basic: a console replacement and explicit error pushing, with opt-in automatic capture. |
+| 2026-10-03 | Phase 6 opened after a review of 1.5.0: bugs and hardening found in edge cases (#47 to #59). |
