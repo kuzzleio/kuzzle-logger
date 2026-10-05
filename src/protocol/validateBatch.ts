@@ -29,17 +29,22 @@ export type BatchLimits = {
    */
   maxEntries?: number;
   /**
-   * Maximum length of "msg" and "err.message". Longer values are truncated.
+   * Maximum length of "msg", "err.message" and of every other string of "context" and
+   * "err" (except stacks). Longer values are truncated. "err.name" is also limited to
+   * 128 characters.
    * @default 2048
    */
   maxMessageLength?: number;
   /**
-   * Maximum serialized (JSON) size of the whole payload, in characters.
+   * Maximum serialized (JSON) size of the whole payload, in characters (UTF-16 code
+   * units), measured on the parsed body: Kuzzle "limits.maxRequestSize" applies first,
+   * to the raw request.
    * @default 65536
    */
   maxPayloadSize?: number;
   /**
-   * Maximum length of "err.stack". Longer stacks are truncated.
+   * Maximum length of "err.stack" (and of the stacks of its causes). Longer stacks
+   * are truncated.
    * @default 8192
    */
   maxStackLength?: number;
@@ -80,6 +85,25 @@ export type BatchValidationResult =
  * Keys that must never be copied, to prevent prototype pollution.
  */
 const UNSAFE_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
+/**
+ * Maximum length of "err.name", which is part of the fingerprint.
+ */
+const MAX_ERROR_NAME_LENGTH = 128;
+
+/**
+ * Upper bound of the "dropped" counter: a client cannot report an absurd number.
+ */
+const MAX_DROPPED = 1_000_000;
+
+type CopyLimits = {
+  maxDepth: number;
+  maxStringLength: number;
+  /**
+   * Maximum length of strings under a "stack" key. Defaults to maxStringLength.
+   */
+  maxStackLength?: number;
+};
 
 class EntryError extends Error {}
 
@@ -143,7 +167,7 @@ export function validateBatch(payload: unknown, limits: BatchLimits = {}): Batch
   }
 
   if (Number.isSafeInteger(payload.dropped) && payload.dropped > 0) {
-    result.dropped = payload.dropped;
+    result.dropped = Math.min(payload.dropped, MAX_DROPPED);
   }
 
   return result;
@@ -194,7 +218,11 @@ function validateEntry(entry: unknown, options: Required<BatchLimits>): BrowserL
       throw new EntryError('"context" must be a plain JSON object');
     }
 
-    result.context = copyJSON(entry.context, options.maxContextDepth, '"context"') as JSONObject;
+    result.context = copyJSON(
+      entry.context,
+      { maxDepth: options.maxContextDepth, maxStringLength: options.maxMessageLength },
+      '"context"',
+    ) as JSONObject;
   }
 
   if (entry.err !== undefined) {
@@ -209,17 +237,22 @@ function validateError(err: unknown, options: Required<BatchLimits>): BrowserLog
     throw new EntryError('"err" must be an object with string "name" and "message"');
   }
 
-  const copy = copyJSON(err, options.maxContextDepth, '"err"') as BrowserLogError;
-
-  copy.message = truncate(copy.message, options.maxMessageLength);
-
-  if (copy.stack !== undefined) {
-    if (typeof copy.stack !== 'string') {
-      throw new EntryError('"err.stack" must be a string');
-    }
-
-    copy.stack = truncate(copy.stack, options.maxStackLength);
+  if (err.stack !== undefined && typeof err.stack !== 'string') {
+    throw new EntryError('"err.stack" must be a string');
   }
+
+  // Strings are truncated by copyJSON: maxMessageLength, or maxStackLength for stacks
+  const copy = copyJSON(
+    err,
+    {
+      maxDepth: options.maxContextDepth,
+      maxStackLength: options.maxStackLength,
+      maxStringLength: options.maxMessageLength,
+    },
+    '"err"',
+  ) as BrowserLogError;
+
+  copy.name = truncate(copy.name, Math.min(MAX_ERROR_NAME_LENGTH, options.maxMessageLength));
 
   return copy;
 }
@@ -242,10 +275,23 @@ function validateApp(app: unknown, options: Required<BatchLimits>): BrowserLogsA
 
 /**
  * Deep copies a JSON value, rejecting non-JSON values. Objects and arrays deeper
- * than maxDepth are replaced with "[Truncated]".
+ * than maxDepth are replaced with "[Truncated]", long strings are truncated.
  */
-function copyJSON(value: unknown, maxDepth: number, path: string, depth = 0): unknown {
-  if (value === null || typeof value === 'string' || typeof value === 'boolean') {
+function copyJSON(
+  value: unknown,
+  limits: CopyLimits,
+  path: string,
+  depth = 0,
+  key?: string,
+): unknown {
+  if (typeof value === 'string') {
+    const maxLength =
+      key === 'stack' ? (limits.maxStackLength ?? limits.maxStringLength) : limits.maxStringLength;
+
+    return truncate(value, maxLength);
+  }
+
+  if (value === null || typeof value === 'boolean') {
     return value;
   }
 
@@ -261,12 +307,12 @@ function copyJSON(value: unknown, maxDepth: number, path: string, depth = 0): un
     throw new EntryError(`${path} contains a non-JSON value`);
   }
 
-  if (depth >= maxDepth) {
+  if (depth >= limits.maxDepth) {
     return '[Truncated]';
   }
 
   if (Array.isArray(value)) {
-    return value.map((item) => copyJSON(item, maxDepth, path, depth + 1));
+    return value.map((item) => copyJSON(item, limits, path, depth + 1));
   }
 
   if (!isPlainObject(value)) {
@@ -275,9 +321,9 @@ function copyJSON(value: unknown, maxDepth: number, path: string, depth = 0): un
 
   const copy: JSONObject = {};
 
-  for (const key of Object.keys(value)) {
-    if (!UNSAFE_KEYS.has(key)) {
-      copy[key] = copyJSON(value[key], maxDepth, path, depth + 1);
+  for (const childKey of Object.keys(value)) {
+    if (!UNSAFE_KEYS.has(childKey)) {
+      copy[childKey] = copyJSON(value[childKey], limits, path, depth + 1, childKey);
     }
   }
 
