@@ -1,3 +1,9 @@
+## [1.6.0-beta.3](https://github.com/kuzzleio/kuzzle-logger/compare/v1.6.0-beta.2...v1.6.0-beta.3) (2026-10-05)
+
+### Features
+
+* **browser:** flush during backoff, idempotent capture, Vue handler options ([08571ea](https://github.com/kuzzleio/kuzzle-logger/commit/08571eadc4d19431abcf67813ea7a743bd74eba3))
+
 ## [1.6.0-beta.2](https://github.com/kuzzleio/kuzzle-logger/compare/v1.6.0-beta.1...v1.6.0-beta.2) (2026-10-05)
 
 ### Features
