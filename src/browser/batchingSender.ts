@@ -75,6 +75,10 @@ export type BatchingSender = BrowserLogSender & {
    * not sent: call flush() first.
    */
   close(): void;
+  /**
+   * Sends the pending entries now, even during a retry backoff. Resolves when they
+   * are sent, or when the attempt failed (the entries are then retried later).
+   */
   flush(): Promise<void>;
 };
 
@@ -270,11 +274,10 @@ export function createBatchingSender(
     }
   };
 
+  // Only called by the timer, by send() outside of a retry backoff, and explicitly:
+  // an explicit flush skips the backoff, so that flush() then close() sends the buffer
   const flush = async (): Promise<void> => {
-    if (retrying) {
-      return;
-    }
-
+    retrying = false;
     clearTimer();
 
     while (inflight) {
