@@ -8,7 +8,11 @@ order: 100
 
 # KuzzleLogger
 
-The main class that provides logging functionality for Kuzzle.
+The Node logger. In a Kuzzle application, `app.log` is a `KuzzleLogger`.
+
+```typescript
+import { KuzzleLogger } from 'kuzzle-logger';
+```
 
 ## Constructor
 
@@ -37,6 +41,7 @@ Get or set the current logging level. Valid levels are:
 - `'info'`
 - `'debug'`
 - `'trace'`
+- `'silent'` (nothing is logged)
 
 ### pino
 
@@ -86,7 +91,7 @@ Each method can be called in multiple ways:
 async flush(): Promise<void>
 ```
 
-Flushes any buffered logs to their destination.
+Writes the buffered entries to their destination. For example, call it before the process exits so that the last entries are not lost.
 
 ### child(namespace: string)
 

@@ -14,7 +14,7 @@ This guide walks through a typical setup: a Kuzzle application (the backend) and
 Frontend (kuzzle-logger/browser) ── browser-logs:push ──▶ Backend (kuzzle-logger/kuzzle) ──▶ app.log transports
 ```
 
-You need `kuzzle-logger` 1.5.0 or later, installed in both the backend and the frontend.
+You need `kuzzle-logger` 1.6.0 or later, installed in both the backend and the frontend.
 
 ## 1. Register the controller in the backend
 
