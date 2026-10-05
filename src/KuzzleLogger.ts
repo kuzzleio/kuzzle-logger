@@ -155,7 +155,9 @@ export class KuzzleLogger {
       this._pino.flush((err) => {
         if (err) {
           reject(err);
+          return;
         }
+
         resolve();
       });
     });

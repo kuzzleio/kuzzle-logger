@@ -10,6 +10,10 @@ order: 200
 
 Transport configuration types that determine how and where logs are written.
 
+```typescript
+import { TransportConfig } from 'kuzzle-logger';
+```
+
 ## Type Definition
 
 The `TransportConfig` type can be one of the following:
