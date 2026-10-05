@@ -22,6 +22,10 @@ You need `kuzzle-logger` 1.6.0 or later, installed in both the backend and the f
 npm install kuzzle-logger
 ```
 
+::: info
+Kuzzle 2.59 and earlier install their own `kuzzle-logger` 1.4 for `app.log`. To have `app.log` use the same version as your application, add an npm `overrides` entry for `kuzzle-logger` and check in `package-lock.json` that only one copy is installed: some npm versions (11.13, for example) ignore `overrides` without any error.
+:::
+
 ```typescript
 // app.ts
 import { Backend, BadRequestError } from 'kuzzle';
