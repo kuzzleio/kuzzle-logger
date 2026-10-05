@@ -1,3 +1,14 @@
+## [1.6.0-beta.2](https://github.com/kuzzleio/kuzzle-logger/compare/v1.6.0-beta.1...v1.6.0-beta.2) (2026-10-05)
+
+### Features
+
+* **ingestion:** harden anonymous ingestion ([2dacf04](https://github.com/kuzzleio/kuzzle-logger/commit/2dacf04499e8db4445c3b22af7e4caad0deb65f9))
+* **types:** export TransportConfig ([75cf7f7](https://github.com/kuzzleio/kuzzle-logger/commit/75cf7f70e7a0592506e9d461d41b3cbeed21ee47)), closes [#59](https://github.com/kuzzleio/kuzzle-logger/issues/59)
+
+### Bug Fixes
+
+* flush() no longer calls resolve() after reject() ([ebd5d3f](https://github.com/kuzzleio/kuzzle-logger/commit/ebd5d3fdf0595ff2f1803a40be7d09c20f12f638)), closes [#59](https://github.com/kuzzleio/kuzzle-logger/issues/59)
+
 ## [1.6.0-beta.1](https://github.com/kuzzleio/kuzzle-logger/compare/v1.5.0...v1.6.0-beta.1) (2026-10-03)
 
 ### Features
