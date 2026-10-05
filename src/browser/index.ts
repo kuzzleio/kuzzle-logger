@@ -28,4 +28,8 @@ export type {
 export { createHttpSender, createKuzzleSender } from './senders.js';
 export type { HttpSenderOptions, KuzzleSdkLike, KuzzleSenderOptions } from './senders.js';
 export { captureGlobalErrors, createVueErrorHandler } from './capture.js';
-export type { CaptureGlobalErrorsOptions, VueErrorHandler } from './capture.js';
+export type {
+  CaptureGlobalErrorsOptions,
+  VueErrorHandler,
+  VueErrorHandlerOptions,
+} from './capture.js';

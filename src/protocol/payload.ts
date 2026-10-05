@@ -13,6 +13,28 @@ export const BROWSER_LOG_LEVELS = ['trace', 'debug', 'info', 'warn', 'error', 'f
 export type BrowserLogLevel = (typeof BROWSER_LOG_LEVELS)[number];
 
 /**
+ * Format of an entry namespace.
+ */
+export const NAMESPACE_PATTERN = /^[a-zA-Z0-9:_-]{1,64}$/;
+
+/**
+ * Default maximum nesting depth of an entry "context" and "err". Objects nested
+ * deeper are replaced: by "[Object]" or "[Array]" in the browser, by "[Truncated]"
+ * by the backend.
+ */
+export const DEFAULT_MAX_DEPTH = 5;
+
+/**
+ * Makes a namespace match NAMESPACE_PATTERN: invalid characters are replaced
+ * with "_" and it is truncated to 64 characters. Returns undefined when empty.
+ */
+export function normalizeNamespace(namespace: string): string | undefined {
+  const normalized = namespace.replace(/[^a-zA-Z0-9:_-]/g, '_').slice(0, 64);
+
+  return normalized.length > 0 ? normalized : undefined;
+}
+
+/**
  * An error serialized by the browser logger.
  */
 export type BrowserLogError = {
@@ -58,8 +80,8 @@ export type BrowserLogsApp = {
 export type BrowserLogsPayload = {
   app?: BrowserLogsApp;
   /**
-   * Number of entries dropped by the browser since the previous batch
-   * (bounded buffer overflow).
+   * Number of entries dropped by the browser since the previous batch (full buffer,
+   * or batch dropped after its retries).
    */
   dropped?: number;
   entries: BrowserLogEntry[];

@@ -2,140 +2,66 @@
 code: false
 type: page
 title: Transport configuration
-description: Transport configuration
-order: 200
+description: Write to several destinations, or use any Pino transport
+order: 300
 ---
 
 # Transport Configuration
 
-The Kuzzle Logger supports various transport configurations to determine how and where logs are written. You can use predefined presets or configure custom transports.
+The `transport` option says where entries are written. It takes one of:
 
-## Transport Types
+- a [preset](/modules/logger/1/guides/presets): `{ preset: 'loki', presetOptions: { ... } }`;
+- several targets, presets or Pino transports: `{ targets: [...] }`;
+- a Pino transport: `{ target: '...' }`, or a chain of them: `{ pipeline: [...] }`.
 
-### 1. Using Presets
+Without `transport`, entries are written to stdout (`stdout` preset). The types are in [TransportConfig](/modules/logger/1/api/types/transport-config).
 
-```typescript
-interface TransportPresetOptions {
-  preset: 'stdout' | 'kuzzle-elasticsearch' | 'loki' | 'file';
-  level?: string;
-  presetOptions?: PresetSpecificOptions;
-}
-```
+## Several destinations
 
-See [Presets](/modules/logger/1/guides/presets) for detailed preset configurations.
-
-### 2. Multiple Transports
-
-```typescript
-interface TransportMultiOptionsWithPreset {
-  targets: Array<
-    TransportPresetOptions | pino.TransportTargetOptions | pino.TransportPipelineOptions
-  >;
-  levels?: Record<string, number>;
-  dedupe?: boolean;
-}
-```
-
-### 3. Single Transport
-
-```typescript
-interface TransportSingleOptions {
-  target: string;
-  options?: object;
-  level?: string;
-}
-```
-
-### 4. Pipeline Transport
-
-```typescript
-interface TransportPipelineOptions {
-  pipeline: Array<{
-    target: string;
-    options?: object;
-  }>;
-}
-```
-
-## Examples
-
-### Using Stdout Preset
+`targets` mixes presets and Pino transports. Each target can have its own `level`:
 
 ```typescript
 const logger = new KuzzleLogger({
-  transport: {
-    preset: 'stdout',
-  },
-});
-```
-
-### Using File Preset
-
-```typescript
-const logger = new KuzzleLogger({
-  transport: {
-    preset: 'file',
-    presetOptions: {
-      destination: '/var/log/my-app.log',
-    },
-  },
-});
-```
-
-### Using Multiple Transports
-
-```typescript
-const logger = new KuzzleLogger({
+  level: 'debug',
+  serviceName: 'my-service',
   transport: {
     targets: [
-      {
-        preset: 'stdout',
-      },
+      { preset: 'stdout', level: 'debug' },
       {
         preset: 'loki',
-        presetOptions: {
-          host: 'http://localhost:3100',
-          labels: {
-            app: 'my-app',
-          },
-        },
+        level: 'info',
+        presetOptions: { host: 'http://localhost:3100' },
       },
     ],
   },
 });
 ```
 
-### Custom Transport
+The logger `level` is applied first: a target only receives the entries at or above both levels.
+
+## Pino transports
+
+Any [Pino transport](https://getpino.io/#/docs/transports) can be used with `target` and its `options`:
 
 ```typescript
 const logger = new KuzzleLogger({
   transport: {
     target: 'pino/file',
-    options: {
-      destination: '/var/log/app.log',
-    },
+    options: { destination: '/var/log/app.log' },
   },
 });
 ```
 
-### Pipeline Transport
+`pipeline` chains transports, each one transforming the entries before the next. This is what the `kuzzle-elasticsearch` preset does:
 
 ```typescript
 const logger = new KuzzleLogger({
   transport: {
     pipeline: [
-      {
-        target: 'pino-transport-ecs',
-        options: {
-          serviceName: 'my-service',
-        },
-      },
+      { target: 'pino-transport-ecs', options: { serviceName: 'my-service' } },
       {
         target: 'pino-elasticsearch',
-        options: {
-          node: 'http://localhost:9200',
-          index: 'logs',
-        },
+        options: { node: 'http://localhost:9200', index: 'logs' },
       },
     ],
   },

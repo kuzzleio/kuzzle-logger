@@ -1,6 +1,8 @@
 // Smoke tests of the built package (run `npm run build` first):
 // - each entry point is imported from Node (CJS and ESM),
-// - each entry point is type-checked with the bundler, node16 and node10 resolutions,
+// - each entry point is type-checked with the bundler, node16, nodenext and node10
+//   resolutions (node16 and nodenext catch a missing ".js" extension in the browser
+//   declarations),
 // - the browser entry is bundled by Vite, without Node built-ins, and tree-shaken.
 //
 // The bundle size is printed, and appended to the GitHub step summary in CI.
@@ -44,7 +46,7 @@ try {
   symlinkSync(root, join(dir, 'node_modules', 'kuzzle-logger'), 'dir');
   write('package.json', '{ "private": true }');
 
-  step('Node CJS: kuzzle-logger, kuzzle-logger/kuzzle, kuzzle-logger/dist', () => {
+  step('Node CJS: kuzzle-logger, kuzzle-logger/kuzzle, kuzzle-logger/dist and deep imports', () => {
     write(
       'cjs.cjs',
       `
@@ -52,6 +54,12 @@ try {
       assert.strictEqual(typeof require('kuzzle-logger').KuzzleLogger, 'function');
       assert.strictEqual(typeof require('kuzzle-logger/dist').KuzzleLogger, 'function');
       assert.strictEqual(typeof require('kuzzle-logger/kuzzle').validateBatch, 'function');
+      // Deep imports, with and without extension (as with 1.4, before the exports map)
+      assert.strictEqual(typeof require('kuzzle-logger/dist/index').KuzzleLogger, 'function');
+      assert.strictEqual(typeof require('kuzzle-logger/dist/KuzzleLogger').KuzzleLogger, 'function');
+      assert.strictEqual(typeof require('kuzzle-logger/dist/KuzzleLogger.js').KuzzleLogger, 'function');
+      assert.strictEqual(typeof require('kuzzle-logger/dist/Presets').Presets, 'function');
+      require('kuzzle-logger/dist/types/KuzzleLoggerConfig');
       `,
     );
     run(['cjs.cjs']);
@@ -65,7 +73,9 @@ try {
       import { KuzzleLogger } from 'kuzzle-logger';
       import { validateBatch } from 'kuzzle-logger/kuzzle';
       import { KuzzleLogger as BrowserLogger, PAYLOAD_VERSION } from 'kuzzle-logger/browser';
+      import deep from 'kuzzle-logger/dist/KuzzleLogger';
       assert.strictEqual(typeof KuzzleLogger, 'function');
+      assert.strictEqual(deep.KuzzleLogger, KuzzleLogger);
       const entries = [];
       new BrowserLogger({ console: false, sender: { send: (entry) => entries.push(entry) } }).info('hi');
       assert.strictEqual(entries[0].msg, 'hi');
@@ -76,21 +86,29 @@ try {
     run(['esm.mjs']);
   });
 
-  step('Types: bundler, node16 and node10 resolutions', () => {
+  step('Types: bundler, node16, nodenext and node10 resolutions', () => {
     const imports = `
-      import { KuzzleLogger } from 'kuzzle-logger';
+      import { KuzzleLogger, TransportConfig } from 'kuzzle-logger';
       import { KuzzleLogger as Legacy } from 'kuzzle-logger/dist';
+      import { KuzzleLogger as Deep } from 'kuzzle-logger/dist/KuzzleLogger';
+      import { KuzzleLogger as DeepJs } from 'kuzzle-logger/dist/KuzzleLogger.js';
+      import { KuzzleLoggerConfig } from 'kuzzle-logger/dist/types/KuzzleLoggerConfig';
       import { validateBatch, BatchValidationResult } from 'kuzzle-logger/kuzzle';
       import { KuzzleLogger as BrowserLogger, PAYLOAD_VERSION, BrowserLogsPayload, VueErrorHandler, captureGlobalErrors, createVueErrorHandler } from 'kuzzle-logger/browser';
       const browserLogger: BrowserLogger = new BrowserLogger({ console: 'warn', level: 'debug' });
       browserLogger.child('map').error(new Error('boom'), 'failed %s', 'x');
       const stop: () => void = captureGlobalErrors(browserLogger, { dedupeInterval: 1000 });
-      const errorHandler: VueErrorHandler = createVueErrorHandler(browserLogger);
+      const errorHandler: VueErrorHandler = createVueErrorHandler(browserLogger, {
+        dedupeInterval: 1000,
+        previous: (err: unknown, instance: unknown, info: string) => {},
+      });
       errorHandler(new Error('boom'), null, 'render function');
       stop();
       const payload: BrowserLogsPayload = { entries: [{ level: 'error' }], version: PAYLOAD_VERSION };
       const result: BatchValidationResult = validateBatch(payload);
-      export const used = [KuzzleLogger, Legacy, result];
+      const transport: TransportConfig = { preset: 'stdout' };
+      const config: KuzzleLoggerConfig = { level: 'info', transport };
+      export const used = [KuzzleLogger, Legacy, Deep, DeepJs, config, result];
     `;
     write('types.ts', imports);
     write('types.mts', imports);
@@ -100,6 +118,7 @@ try {
 
     run([tsc, ...common, '--module', 'esnext', '--moduleResolution', 'bundler', 'types.ts']);
     run([tsc, ...common, '--module', 'node16', '--moduleResolution', 'node16', 'types.mts']);
+    run([tsc, ...common, '--module', 'nodenext', '--moduleResolution', 'nodenext', 'types.mts']);
     run([tsc, ...common, '--module', 'commonjs', '--moduleResolution', 'node10', 'types.ts']);
   });
 

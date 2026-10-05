@@ -8,65 +8,40 @@ order: 100
 
 # KuzzleLoggerConfig
 
-Configuration type for the KuzzleLogger constructor.
-
-## Type Definition
+Options of the [KuzzleLogger](/modules/logger/1/api/kuzzle-logger) constructor. In a Kuzzle application, they are set in the `server.appLogs` section of the Kuzzle configuration.
 
 ```typescript
+import { KuzzleLoggerConfig } from 'kuzzle-logger';
+
 interface KuzzleLoggerConfig {
-  getMergingObject?: () => JSONObject;
   level?: string;
   serviceName?: string;
-  skipPinoInstance?: boolean;
   transport?: TransportConfig;
+  getMergingObject?: () => JSONObject;
 }
 ```
 
-## Properties
+| Property           | Default  | Description                                                                                                                       |
+| ------------------ | -------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `level`            | `info`   | Minimum level of the logged entries: `trace`, `debug`, `info`, `warn`, `error`, `fatal` or `silent` (nothing is logged).          |
+| `serviceName`      | –        | Name of the service. Used by the `loki` preset (`service_name` label) and the `kuzzle-elasticsearch` preset (ECS `service.name`). |
+| `transport`        | `stdout` | Where entries are written. See [TransportConfig](/modules/logger/1/api/types/transport-config).                                   |
+| `getMergingObject` | –        | Called on each log: the fields it returns are added to the entry, and to the entries of the child loggers.                        |
 
-### getMergingObject
-
-```typescript
-getMergingObject?: () => JSONObject
-```
-
-Optional function that returns an object to merge with all log entries. This is useful for adding consistent metadata to all logs.
-
-### level
+`getMergingObject` adds context known at log time, e.g. the ID of the current request:
 
 ```typescript
-level?: string
+import { AsyncLocalStorage } from 'node:async_hooks';
+
+const requestContext = new AsyncLocalStorage<{ requestId: string }>();
+
+const logger = new KuzzleLogger({
+  getMergingObject: () => requestContext.getStore() ?? {},
+});
 ```
 
-The minimum log level to output. Valid values are:
+Its fields take precedence over the fields of the logged object.
 
-- `'fatal'`
-- `'error'`
-- `'warn'`
-- `'info'`
-- `'debug'`
-- `'trace'`
-
-### serviceName
-
-```typescript
-serviceName?: string
-```
-
-Name of the service for identification in logs.
-
-### skipPinoInstance
-
-```typescript
-skipPinoInstance?: boolean
-```
-
-If true, skips the creation of a Pino instance. This is used internally for child loggers.
-
-### transport
-
-```typescript
-transport?: TransportConfig
-```
-
-Transport configuration that determines how and where logs are written. See [TransportConfig](/modules/logger/1/api/types/transport-config) for details.
+::: info
+The type also has a `skipPinoInstance` property, used internally to create child loggers. Do not set it.
+:::

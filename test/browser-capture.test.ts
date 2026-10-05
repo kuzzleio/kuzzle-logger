@@ -237,6 +237,38 @@ describe('captureGlobalErrors', () => {
     ]);
   });
 
+  it('captures once per target, keeping the first logger', () => {
+    const { entries, logger } = setup();
+    const other = setup();
+
+    stop = captureGlobalErrors(logger.child('first'));
+    const again = captureGlobalErrors(other.logger.child('second'));
+
+    expect(again).toBe(stop);
+
+    window.dispatchEvent(rejectionEvent('once'));
+
+    expect(entries.map((entry) => entry.namespace)).toEqual(['app:first']);
+    expect(other.entries).toEqual([]);
+  });
+
+  it('can capture again after stopping, and per target', () => {
+    const { entries, logger } = setup();
+    const target = new EventTarget();
+
+    captureGlobalErrors(logger.child('old'))();
+    stop = captureGlobalErrors(logger.child('new'));
+    const stopTarget = captureGlobalErrors(logger.child('target'), { target });
+
+    window.dispatchEvent(rejectionEvent('window'));
+    target.dispatchEvent(rejectionEvent('target'));
+    stopTarget();
+    stopTarget();
+    target.dispatchEvent(rejectionEvent('stopped'));
+
+    expect(entries.map((entry) => entry.namespace)).toEqual(['app:new', 'app:target']);
+  });
+
   it('does nothing without a target', () => {
     const { logger } = setup();
 
@@ -320,6 +352,88 @@ describe('createVueErrorHandler', () => {
 
     expect(entries).toEqual([]);
     expect(consoleError).toHaveBeenCalledWith(error);
+  });
+
+  it.each([
+    ['https://vuejs.org/error-reference/#runtime-1', 'render function'],
+    ['https://vuejs.org/error-reference/#runtime-3', 'watcher callback'],
+    ['https://vuejs.org/error-reference/#runtime-16', 'app unmount cleanup function'],
+    ['https://vuejs.org/error-reference/#runtime-bc', 'beforeCreate hook'],
+    ['https://vuejs.org/error-reference/#runtime-u', 'updated hook'],
+    [
+      'https://vuejs.org/error-reference/#runtime-99',
+      'https://vuejs.org/error-reference/#runtime-99',
+    ],
+    ['v-on handler', 'v-on handler'],
+  ])('maps the production info %s', (info, expected) => {
+    const { entries, logger } = setup();
+
+    createVueErrorHandler(logger)(new Error('boom'), null, info);
+
+    expect(entries[0]).toMatchObject({
+      context: { info: expected },
+      msg: `Vue error in ${expected}: boom`,
+    });
+  });
+
+  it('calls the previous handler after logging, every time', () => {
+    const { entries, logger } = setup();
+    const calls: string[] = [];
+    const previous = vi.fn((err: unknown, instance: unknown, info: string) => {
+      calls.push(`previous:${entries.length}:${info}`);
+    });
+    const handler = createVueErrorHandler(logger, { previous });
+    const error = new Error('boom');
+    const instance = { $options: { name: 'Map' } };
+
+    handler(error, instance, 'render function');
+    handler(error, instance, 'render function');
+
+    expect(previous).toHaveBeenCalledWith(error, instance, 'render function');
+    expect(calls).toEqual(['previous:1:render function', 'previous:1:render function']);
+    expect(consoleError).toHaveBeenCalledTimes(2);
+  });
+
+  it('never throws when the previous handler does', () => {
+    const { entries, logger } = setup();
+    const handler = createVueErrorHandler(logger, {
+      previous: () => {
+        throw new Error('previous failure');
+      },
+    });
+
+    expect(() => handler(new Error('boom'), null, 'render function')).not.toThrow();
+    expect(entries).toHaveLength(1);
+  });
+
+  it('deduplicates identical errors within dedupeInterval (5 s by default)', () => {
+    const { entries, logger } = setup();
+    const handler = createVueErrorHandler(logger);
+    const map = { $options: { name: 'Map' } };
+
+    handler(new Error('render failed'), map, 'render function');
+    handler(new Error('render failed'), map, 'render function');
+    handler(new Error('render failed'), { $options: { name: 'List' } }, 'render function');
+    handler(new Error('render failed'), map, 'setup function');
+    handler(new TypeError('render failed'), map, 'render function');
+    handler(new Error('other'), map, 'render function');
+    vi.advanceTimersByTime(4999);
+    handler(new Error('render failed'), map, 'render function');
+    vi.advanceTimersByTime(1);
+    handler(new Error('render failed'), map, 'render function');
+
+    expect(entries).toHaveLength(6);
+    expect(consoleError).toHaveBeenCalledTimes(8);
+  });
+
+  it('accepts a custom dedupeInterval, 0 disabling deduplication', () => {
+    const { entries, logger } = setup();
+    const handler = createVueErrorHandler(logger, { dedupeInterval: 0 });
+
+    handler(new Error('boom'), null, 'render function');
+    handler(new Error('boom'), null, 'render function');
+
+    expect(entries).toHaveLength(2);
   });
 
   it('never throws', () => {

@@ -2,64 +2,27 @@
 code: false
 type: page
 title: Child logger
-description: Child logger
+description: Namespace the logs of each part of an application
 order: 400
 ---
 
 # Child Logger
 
-The Kuzzle Logger provides a child logger functionality that allows you to create namespaced loggers. This is particularly useful when you want to organize logs by different components or modules of your application.
-
-## Creating a Child Logger
-
-You can create a child logger using the `child()` method:
+`child(namespace)` returns a logger whose entries have a `namespace` field, to tell which part of the application wrote them. Namespaces are appended with `:`:
 
 ```typescript
-const logger = new KuzzleLogger(config);
-const childLogger = logger.child('myNamespace');
-```
+const authLogger = logger.child('auth'); // namespace "auth"
+const loginLogger = authLogger.child('login'); // namespace "auth:login"
 
-## Namespace Binding
-
-The child logger automatically handles namespace binding:
-
-- If the parent logger has no namespace, the child logger will use the provided namespace directly
-- If the parent logger already has a namespace, the child logger will append its namespace to the parent's namespace using a colon (`:`) separator
-
-For example:
-
-```typescript
-const logger = new KuzzleLogger(config);
-const childLogger = logger.child('auth'); // namespace: "auth"
-const grandChildLogger = childLogger.child('login'); // namespace: "auth:login"
-```
-
-## Usage Example
-
-```typescript
-const logger = new KuzzleLogger(config);
-const authLogger = logger.child('auth');
-
-// These logs will include the "auth" namespace
-authLogger.info('User authentication started');
-authLogger.error('Invalid credentials');
-
-const loginLogger = authLogger.child('login');
-// These logs will include the "auth:login" namespace
 loginLogger.info('Login attempt');
-loginLogger.debug('Validating credentials');
 ```
-
-## Log Output
-
-When using a child logger, the namespace will be included in the log output, making it easier to identify the source of each log entry. For example:
 
 ```json
-{
-  "level": 30,
-  "namespace": "auth:login",
-  "msg": "Login attempt",
-  "time":1742371409983,
-  ...
-}
+{ "level": 30, "time": 1742371409983, "namespace": "auth:login", "msg": "Login attempt" }
 ```
+
+In a Kuzzle application, `app.log` already has a namespace: `app.log.child('mqtt')` logs under `kuzzle:app:mqtt`.
+
+- A child writes to the same transports as its parent, with the parent `getMergingObject` fields.
+- Its level follows the parent level, even when the parent level changes later, until a level is set on the child (`child.level = 'debug'`).
+- Keep namespaces static (`mqtt`, not `device-${deviceId}`): they are often used as labels, for example with the Loki `propsToLabels` option. Put the variable parts in the logged object.

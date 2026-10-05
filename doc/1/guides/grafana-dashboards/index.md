@@ -2,11 +2,13 @@
 code: false
 type: page
 title: Grafana dashboards
-description: Grafana dashboards
-order: 500
+description: Query backend and browser logs in Grafana with Loki
+order: 800
 ---
 
 # Grafana Dashboards
+
+With the [Loki preset](/modules/logger/1/guides/presets#loki), logs can be queried in Grafana. This page gives LogQL queries for [browser logs](#browser-logs-in-loki), and a [dashboard](#loki-dashboard) to import.
 
 ## Browser logs in Loki
 

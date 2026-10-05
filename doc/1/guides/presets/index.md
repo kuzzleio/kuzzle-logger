@@ -2,156 +2,105 @@
 code: false
 type: page
 title: Presets
-description: Presets
-order: 300
+description: Write logs to stdout, a file, Loki or Elasticsearch with the built-in presets
+order: 200
 ---
 
 # Presets
 
-Kuzzle Logger comes with several built-in presets that provide pre-configured transport options for common use cases.
-
-## Available Presets
-
-### 1. Stdout Preset
-
-The default preset that outputs logs to the standard output.
-
-```typescript
-{
-  preset: 'stdout';
-  level?: string;
-}
-```
-
-#### Behavior
-
-- In development environment (`NODE_ENV=development`):
-  - Uses `pino-pretty` for formatted output
-  - Minimum level set to `trace`
-- In other environments:
-  - Uses `pino/file` with destination to stdout
-  - Default level is `info`
-
-### 2. Kuzzle Elasticsearch Preset
-
-Configures logging to Elasticsearch with Kuzzle-specific formatting.
-
-```typescript
-{
-  preset: 'kuzzle-elasticsearch';
-  level?: string;
-  presetOptions: {
-    addKuzzleInfo?: boolean;  // Defaults to true
-    esVersion?: number;       // Defaults to 8
-    index?: string;          // Defaults to '&platform.logs'
-    node: string;            // Required - Elasticsearch node URL
-  };
-}
-```
-
-#### Features
-
-- Automatically adds Kuzzle metadata (can be disabled)
-- Uses ECS (Elastic Common Schema) formatting
-- Configurable Elasticsearch version and index
-
-### 3. Loki Preset
-
-Configures logging to Grafana Loki.
-
-```typescript
-{
-  preset: 'loki';
-  level?: string;
-  presetOptions: {
-    batching?: boolean;      // Defaults to true
-    headers?: Record<string, string>;  // Custom HTTP headers
-    host: string;           // Required - Loki host URL
-    interval?: number;      // Batching interval, in seconds. Defaults to 1
-    labels?: Record<string, string>;  // Custom labels, they take precedence over service_name
-    levelMap?: Record<number, string>; // Custom log level mapping
-    propsToLabels?: string[]; // Properties to extract as labels from log entries
-  };
-}
-```
-
-The `service_name` label is set from `serviceName` when it is defined, unless `labels.service_name` is provided.
-
-The `kuzzle-elasticsearch` (`node`), `loki` (`host`) and `file` (`destination`) presets throw an explicit error when their required option is missing.
-
-An example of Loki dashboard is available [here](/modules/logger/1/guides/grafana-dashboards#loki-dashboard).
-
-## Usage Examples
-
-### Stdout Preset
-
-```typescript
-const logger = new KuzzleLogger({
-  transport: {
-    preset: 'stdout',
-    level: 'debug',
-  },
-});
-```
-
-### Kuzzle Elasticsearch Preset
-
-```typescript
-const logger = new KuzzleLogger({
-  serviceName: 'my-service',
-  transport: {
-    preset: 'kuzzle-elasticsearch',
-    presetOptions: {
-      node: 'http://localhost:9200',
-      index: 'my-app-logs',
-      esVersion: 8,
-      addKuzzleInfo: true,
-    },
-  },
-});
-```
-
-### Loki Preset
+A preset is a ready-made destination: you name it in `transport` and give its options, Kuzzle Logger configures the underlying Pino transport.
 
 ```typescript
 const logger = new KuzzleLogger({
   serviceName: 'my-service',
   transport: {
     preset: 'loki',
-    presetOptions: {
-      host: 'http://localhost:3100',
-      labels: {
-        environment: 'production',
-        app: 'my-app',
-      },
-      headers: {
-        Authorization: 'Bearer token',
-      },
-    },
+    level: 'info',
+    presetOptions: { host: 'http://localhost:3100' },
   },
 });
 ```
 
-## Combining Presets
+| Preset                 | Writes to                   | Requires                                   |
+| ---------------------- | --------------------------- | ------------------------------------------ |
+| `stdout` (default)     | Standard output             | `pino-pretty` in development               |
+| `file`                 | A file or a file descriptor | –                                          |
+| `loki`                 | Grafana Loki                | `pino-loki`                                |
+| `kuzzle-elasticsearch` | Elasticsearch, in ECS       | `pino-elasticsearch`, `pino-transport-ecs` |
 
-You can use multiple presets together using the multiple transports configuration:
+The transport packages are optional peer dependencies: install the ones your presets use. Every preset accepts a `level` (`info` by default). `loki`, `file` and `kuzzle-elasticsearch` throw an explicit error when their required option is missing.
+
+To write to several destinations, or to use a Pino transport that has no preset, see [Transport configuration](/modules/logger/1/guides/transport-configuration). The option types are in [Preset options](/modules/logger/1/api/types/preset-options).
+
+## stdout
 
 ```typescript
-const logger = new KuzzleLogger({
-  transport: {
-    targets: [
-      {
-        preset: 'stdout',
-        level: 'debug',
-      },
-      {
-        preset: 'loki',
-        level: 'info',
-        presetOptions: {
-          host: 'http://localhost:3100',
-        },
-      },
-    ],
-  },
-});
+transport: {
+  preset: 'stdout';
+}
 ```
+
+- When `NODE_ENV` is `development` or not set, entries are pretty-printed with `pino-pretty`, which must be installed (`npm install pino-pretty`).
+- Otherwise, entries are written as JSON lines.
+
+This is the preset used when `transport` is not set.
+
+## file
+
+```typescript
+transport: {
+  preset: 'file',
+  presetOptions: { destination: '/var/log/my-app.log' },
+}
+```
+
+| Option        | Default | Description                                                           |
+| ------------- | ------- | --------------------------------------------------------------------- |
+| `destination` | –       | Required. File path, or file descriptor (`1` = stdout, `2` = stderr). |
+| `mkdir`       | `true`  | Creates the directory if needed.                                      |
+| `append`      | `true`  | Appends to the file instead of overwriting it.                        |
+
+Entries are written as JSON lines.
+
+## loki
+
+```typescript
+transport: {
+  preset: 'loki',
+  presetOptions: {
+    host: 'http://localhost:3100',
+    labels: { environment: 'production' },
+    propsToLabels: ['namespace'],
+  },
+}
+```
+
+| Option          | Default                         | Description                                                                                                       |
+| --------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `host`          | –                               | Required. Loki URL.                                                                                               |
+| `labels`        | –                               | Labels added to every stream. `service_name` is set from `serviceName`, unless `labels.service_name` is provided. |
+| `propsToLabels` | –                               | Entry fields used as labels, e.g. `['namespace']`. Only use fields with few distinct values.                      |
+| `headers`       | –                               | HTTP headers of the requests, e.g. `{ Authorization: 'Bearer ...' }`.                                             |
+| `batching`      | `true`                          | Sends entries in batches.                                                                                         |
+| `interval`      | `1`                             | Batching interval, in seconds.                                                                                    |
+| `levelMap`      | Pino levels, `warn` → `warning` | Mapping of Pino numeric levels to Loki level names.                                                               |
+
+See [Grafana dashboards](/modules/logger/1/guides/grafana-dashboards) for queries and a ready-made dashboard.
+
+## kuzzle-elasticsearch
+
+```typescript
+transport: {
+  preset: 'kuzzle-elasticsearch',
+  presetOptions: { node: 'http://localhost:9200' },
+}
+```
+
+| Option          | Default          | Description                                                              |
+| --------------- | ---------------- | ------------------------------------------------------------------------ |
+| `node`          | –                | Required. Elasticsearch URL.                                             |
+| `index`         | `&platform.logs` | Index the entries are written to.                                        |
+| `esVersion`     | `8`              | Elasticsearch major version.                                             |
+| `addKuzzleInfo` | `true`           | Adds `_kuzzle_info` to each entry, like the documents written by Kuzzle. |
+
+Entries are formatted with the Elastic Common Schema (ECS).

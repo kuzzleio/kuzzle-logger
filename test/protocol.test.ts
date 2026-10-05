@@ -113,8 +113,7 @@ describe('validateBatch', () => {
           { level: 'verbose' },
           { level: 'info', msg: 42 },
           { level: 'info', time: 'yesterday' },
-          { level: 'info', namespace: 'with spaces' },
-          { level: 'info', namespace: 'x'.repeat(65) },
+          { level: 'info', namespace: 42 },
           { context: 'nope', level: 'info' },
           { context: [1, 2], level: 'info' },
           { err: 'boom', level: 'error' },
@@ -128,9 +127,7 @@ describe('validateBatch', () => {
         { level: 'info', msg: 'ok' },
         { level: 'warn', msg: 'ok too' },
       ]);
-      expect(result.rejected.map(({ index }) => index)).toEqual([
-        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11,
-      ]);
+      expect(result.rejected.map(({ index }) => index)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
       expect(result.rejected.every(({ reason }) => typeof reason === 'string')).toBe(true);
     });
 
@@ -174,15 +171,95 @@ describe('validateBatch', () => {
       expect(entry.err?.stack).toHaveLength(60);
     });
 
-    it('rejects contexts deeper than maxContextDepth', () => {
-      const deep = { a: { b: { c: { d: 1 } } } };
+    it('truncates error names, custom error strings and context strings', () => {
+      const result = validateBatch(
+        batch([
+          {
+            context: { nested: { list: ['c'.repeat(100)] }, note: 'n'.repeat(100), short: 'ok' },
+            err: {
+              cause: { message: 'cause', name: 'Error', stack: 's'.repeat(100) },
+              code: 'x'.repeat(100),
+              message: 'boom',
+              name: 'N'.repeat(500),
+              stack: 's'.repeat(100),
+            },
+            level: 'error',
+          },
+        ]),
+        { maxMessageLength: 50, maxStackLength: 60 },
+      );
+
+      const [entry] = (result as { entries: BrowserLogEntry[] }).entries;
+
+      expect(entry.err?.name).toHaveLength(50);
+      expect(entry.err?.name).toMatch(/…\[truncated\]$/);
+      expect(entry.err?.code).toHaveLength(50);
+      expect(entry.err?.stack).toHaveLength(60);
+      // Stacks of causes keep the stack limit
+      expect((entry.err?.cause as { stack: string }).stack).toHaveLength(60);
+      expect(entry.context?.note).toHaveLength(50);
+      expect((entry.context?.nested as { list: string[] }).list[0]).toHaveLength(50);
+      expect(entry.context?.short).toBe('ok');
+    });
+
+    it('truncates error names to 128 characters', () => {
+      const result = validEntries(
+        batch([{ err: { message: 'boom', name: 'N'.repeat(500) }, level: 'error' }]),
+      );
+
+      expect(result.entries[0].err?.name).toHaveLength(128);
+    });
+
+    it('normalizes namespaces instead of rejecting them', () => {
+      const result = validEntries(
+        batch([
+          { level: 'info', namespace: 'MapView.vue' },
+          { level: 'info', namespace: 'dashboard:Map View' },
+          { level: 'info', namespace: 'x'.repeat(65) },
+          { level: 'info', namespace: '' },
+        ]),
+      );
+
+      expect(result.rejected).toEqual([]);
+      expect(result.entries).toEqual([
+        { level: 'info', namespace: 'MapView_vue' },
+        { level: 'info', namespace: 'dashboard:Map_View' },
+        { level: 'info', namespace: 'x'.repeat(64) },
+        { level: 'info' },
+      ]);
+    });
+
+    it('truncates contexts deeper than maxContextDepth instead of rejecting them', () => {
+      const deep = { a: { b: { c: { d: 1 } } }, list: [[[[1]]]] };
 
       expect(
         validateBatch(batch([{ context: deep, level: 'info' }]), { maxContextDepth: 3 }),
-      ).toMatchObject({ entries: [], rejected: [{ index: 0 }] });
+      ).toMatchObject({
+        entries: [{ context: { a: { b: { c: '[Truncated]' } }, list: [['[Truncated]']] } }],
+        rejected: [],
+      });
       expect(
-        validateBatch(batch([{ context: deep, level: 'info' }]), { maxContextDepth: 4 }),
+        validateBatch(batch([{ context: deep, level: 'info' }]), { maxContextDepth: 5 }),
       ).toMatchObject({ entries: [{ context: deep }], rejected: [] });
+    });
+
+    it('truncates long error cause chains instead of rejecting the entry', () => {
+      let err: Record<string, unknown> = { message: 'root', name: 'Error' };
+
+      for (let i = 1; i <= 7; i++) {
+        err = { cause: err, message: `level ${i}`, name: 'Error' };
+      }
+
+      const result = validEntries(batch([{ err, level: 'error' }]));
+      const causes: unknown[] = [];
+
+      for (let cause = result.entries[0].err?.cause; cause; cause = (cause as any).cause) {
+        causes.push(typeof cause === 'string' ? cause : (cause as any).message);
+      }
+
+      expect(result.rejected).toEqual([]);
+      expect(result.entries[0].err?.message).toBe('level 7');
+      expect(causes).toEqual(['level 6', 'level 5', 'level 4', 'level 3', '[Truncated]']);
     });
 
     it('rejects non-JSON context values', () => {
@@ -236,6 +313,10 @@ describe('validateBatch', () => {
       expect(validEntries(batch([], { dropped }))).not.toHaveProperty('dropped');
     });
 
+    it('clamps the dropped counter', () => {
+      expect(validEntries(batch([], { dropped: Number.MAX_SAFE_INTEGER })).dropped).toBe(1_000_000);
+    });
+
     it('ignores invalid app values', () => {
       expect(validEntries(batch([], { app: 'front' }))).not.toHaveProperty('app');
       expect(validEntries(batch([], { app: { name: 42 } }))).not.toHaveProperty('app');
@@ -273,6 +354,41 @@ describe('sanitize', () => {
     expect(sanitize(entry, { denylist: ['E-mail'], replacement: '***' }).context).toEqual({
       Email: '***',
       name: 'x',
+    });
+  });
+
+  it('only redacts by key in context and error custom properties', () => {
+    const entry: BrowserLogEntry = {
+      context: { age: 42, name: 'Alice', nested: { lastName: 'Doe' } },
+      err: {
+        cause: { message: 'inner', name: 'Error', userName: 'bob' },
+        errors: [{ ageGroup: 'adult', message: 'one', name: 'RangeError' }],
+        fieldName: 'email',
+        message: 'Wrong age for Alice',
+        name: 'ValidationError',
+        stack: 'ValidationError: Wrong age for Alice\n    at f (app.js:1:1)',
+      },
+      level: 'error',
+      msg: 'name and age rejected',
+      namespace: 'form:name',
+      time: 1759312800000,
+    };
+    const result = sanitize(entry, { denylist: ['name', 'age', 'time', 'level'] });
+
+    expect(result).toEqual({
+      context: { age: '[REDACTED]', name: '[REDACTED]', nested: { lastName: '[REDACTED]' } },
+      err: {
+        cause: { message: 'inner', name: 'Error', userName: '[REDACTED]' },
+        errors: [{ ageGroup: '[REDACTED]', message: 'one', name: 'RangeError' }],
+        fieldName: '[REDACTED]',
+        message: 'Wrong age for Alice',
+        name: 'ValidationError',
+        stack: 'ValidationError: Wrong age for Alice\n    at f (app.js:1:1)',
+      },
+      level: 'error',
+      msg: 'name and age rejected',
+      namespace: 'form:name',
+      time: 1759312800000,
     });
   });
 
@@ -335,14 +451,37 @@ describe('redactString', () => {
     ['password=hunter2 next', 'password=[REDACTED] next'],
     ['authorization: Bearer abc.def', 'authorization: Bearer [REDACTED]'],
     ['no secret here', 'no secret here'],
+    ['/cb?client_secret=abc&state=1', '/cb?client_secret=[REDACTED]&state=1'],
+    ['mytoken=abc', 'mytoken=[REDACTED]'],
+    ['x-api-key=abc', 'x-api-key=[REDACTED]'],
+    ['refresh-token=abc', 'refresh-token=[REDACTED]'],
+    ['tokens=5 tokenizer=wordpiece', 'tokens=5 tokenizer=wordpiece'],
+    ['body {"password":"hunter2","user":"bob"}', 'body {"password":"[REDACTED]","user":"bob"}'],
+    ['{"accessToken": "a\\"b", "pin": 1234}', '{"accessToken": "[REDACTED]", "pin": 1234}'],
+    ['{"apiKey":42}', '{"apiKey":"[REDACTED]"}'],
+    ['Authorization: Token abc', 'Authorization: Token [REDACTED]'],
+    [`Authorization: Bearer ${JWT}`, 'Authorization: Bearer [REDACTED]'],
+    ['authorization=xyz', 'authorization=[REDACTED]'],
   ])('%s', (input, expected) => {
     expect(redactString(input)).toBe(expected);
+  });
+
+  it('redacts JSON keys from a custom denylist', () => {
+    expect(redactString('{"email":"a@b.c","id":1}', '***', ['email'])).toBe(
+      '{"email":"***","id":1}',
+    );
+  });
+
+  it('uses the custom denylist of sanitize in strings', () => {
+    const entry: BrowserLogEntry = { level: 'info', msg: 'payload {"e-mail":"a@b.c"}' };
+
+    expect(sanitize(entry, { denylist: ['email'] }).msg).toBe('payload {"e-mail":"[REDACTED]"}');
   });
 });
 
 describe('fingerprint', () => {
-  const stack = (file: string, line = 10) =>
-    `TypeError: Cannot read properties of undefined (reading 'id')\n    at loadAsset (${file}:${line}:5)\n    at main (https://app.example.com/main.js:1:1)`;
+  const stack = (file: string, line = 10, column = 5) =>
+    `TypeError: Cannot read properties of undefined (reading 'id')\n    at loadAsset (${file}:${line}:${column})\n    at main (https://app.example.com/main.js:1:1)`;
 
   it('is stable for the same error', () => {
     const entry: BrowserLogEntry = {
@@ -370,7 +509,22 @@ describe('fingerprint', () => {
     );
   });
 
-  it('distinguishes error names, messages and locations', () => {
+  it('is stable across deploys: build hashes and positions are ignored', () => {
+    const make = (file: string, line: number, column: number): BrowserLogEntry => ({
+      err: { message: 'boom', name: 'TypeError', stack: stack(file, line, column) },
+      level: 'error',
+    });
+    const files = [
+      ['https://app/assets/index-B3x_9aZq.js', 1, 2045],
+      ['https://app/assets/index-Ck-LmP0w.js', 1, 3187],
+      ['https://app/assets/index.0123456789abcdef0123.js', 2, 10],
+      ['https://app/assets/index-a1b2c3d4e5f6.js', 1, 7],
+    ] as const;
+
+    expect(new Set(files.map((args) => fingerprint(make(...args)))).size).toBe(1);
+  });
+
+  it('distinguishes error names, messages, functions and files', () => {
     const base: BrowserLogEntry = {
       err: { message: 'boom', name: 'TypeError', stack: stack('https://app/a.js') },
       level: 'error',
@@ -378,8 +532,8 @@ describe('fingerprint', () => {
     const variants: BrowserLogEntry[] = [
       { ...base, err: { ...base.err!, name: 'RangeError' } },
       { ...base, err: { ...base.err!, message: 'other' } },
-      { ...base, err: { ...base.err!, stack: stack('https://app/a.js', 11) } },
       { ...base, err: { ...base.err!, stack: stack('https://app/b.js') } },
+      { ...base, err: { ...base.err!, stack: base.err!.stack!.replace('loadAsset', 'saveAsset') } },
     ];
 
     for (const variant of variants) {
@@ -418,14 +572,24 @@ describe('topFrame', () => {
     [
       'V8',
       'Error: x\n    at loadAsset (https://app/assets/index-B3x_9aZq.js?v=2:10:5)',
-      'loadAsset (https://app/assets/index.js:10:5)',
+      'loadAsset (https://app/assets/index.js)',
     ],
     [
       'SpiderMonkey/JSC',
       'loadAsset@https://app/assets/main.js#x:10:5\n@https://app/b.js:1:1',
-      'loadAsset@https://app/assets/main.js:10:5',
+      'loadAsset@https://app/assets/main.js',
     ],
-    ['anonymous JSC frame', '@https://app/b.js:1:1', '@https://app/b.js:1:1'],
+    ['anonymous JSC frame', '@https://app/b.js:1:1', '@https://app/b.js'],
+    [
+      'anonymous V8 frame',
+      'Error: x\n    at https://app/main-Ck-LmP0w.js:1:23',
+      'https://app/main.js',
+    ],
+    [
+      'webpack hash',
+      'Error: x\n    at f (https://app/main.0123456789abcdef0123.js:1:2)',
+      'f (https://app/main.js)',
+    ],
   ])('parses %s stacks', (_, stack, expected) => {
     expect(topFrame(stack)).toBe(expected);
   });

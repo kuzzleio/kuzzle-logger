@@ -2,7 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { BrowserLogSender, KuzzleLogger } from '../src/browser';
-import { BrowserLogEntry } from '../src/protocol';
+import { BrowserLogEntry, validateBatch } from '../src/protocol';
 
 function memorySender(): BrowserLogSender & { entries: BrowserLogEntry[] } {
   const entries: BrowserLogEntry[] = [];
@@ -196,6 +196,16 @@ describe('browser KuzzleLogger', () => {
       ]);
     });
 
+    it('reserves the "namespace" context key for the entry namespace', () => {
+      const { entries, logger } = setup({ namespace: 'dashboard' });
+
+      logger.info({ namespace: 'tenant-a', tenant: 'a' }, 'hello');
+      setup().logger.info({ namespace: 'other' }, 'ignored');
+
+      expect(entries[0]).toMatchObject({ context: { tenant: 'a' }, namespace: 'dashboard' });
+      expect(entries[0].context).not.toHaveProperty('namespace');
+    });
+
     it('names children without a parent namespace', () => {
       const { entries, logger } = setup();
 
@@ -225,6 +235,113 @@ describe('browser KuzzleLogger', () => {
       logger.info({ id: 1, route: 'spoofed' }, 'x');
 
       expect(entries[0].context).toEqual({ id: 1, route: '/home' });
+    });
+
+    it('logs without the merging object when it throws', () => {
+      const store: { user: { id: string } | null } = { user: null };
+      const { entries, logger } = setup({
+        getMergingObject: () => ({ user: store.user!.id }),
+        namespace: 'dashboard',
+      });
+
+      expect(() => logger.info('before login')).not.toThrow();
+      expect(() => logger.child('map').warn({ id: 1 }, 'child')).not.toThrow();
+
+      store.user = { id: 'alice' };
+      logger.info('after login');
+
+      expect(entries).toEqual([
+        { level: 'info', msg: 'before login', namespace: 'dashboard', time: 1759312800000 },
+        {
+          context: { id: 1 },
+          level: 'warn',
+          msg: 'child',
+          namespace: 'dashboard:map',
+          time: 1759312800000,
+        },
+        {
+          context: { user: 'alice' },
+          level: 'info',
+          msg: 'after login',
+          namespace: 'dashboard',
+          time: 1759312800000,
+        },
+      ]);
+    });
+
+    it.each([[null], ['route'], [['a']]])('ignores a merging object that is %j', (value) => {
+      const { entries, logger } = setup({
+        getMergingObject: () => value as any,
+        namespace: 'dashboard',
+      });
+
+      expect(() => logger.info('hello')).not.toThrow();
+      expect(entries).toEqual([
+        { level: 'info', msg: 'hello', namespace: 'dashboard', time: 1759312800000 },
+      ]);
+    });
+
+    it('never throws when formatting the message fails', () => {
+      const { logger } = setup();
+      const hostile = {
+        toString() {
+          throw new Error('boom');
+        },
+      };
+
+      expect(() => logger.info('value: %s', hostile)).not.toThrow();
+    });
+
+    it('produces entries the backend accepts: namespaces and depth', () => {
+      const { entries, logger } = setup({ namespace: 'dashboard' });
+      let err = new Error('root');
+
+      for (let i = 1; i <= 7; i++) {
+        err = new Error(`level ${i}`, { cause: err });
+      }
+
+      logger.child('MapView.vue').info('dot');
+      logger.child('Map View').child('x'.repeat(80)).info('space and length');
+      logger.info({ a: { b: { c: { d: { e: { f: 1 } } } } }, list: [[[[[[1]]]]]] }, 'deep');
+      logger.error(err);
+
+      const result = validateBatch({ entries, version: 1 });
+
+      expect(result).toMatchObject({ rejected: [], valid: true });
+      expect(entries.map((entry) => entry.namespace)).toEqual([
+        'dashboard:MapView_vue',
+        `dashboard:Map_View:${'x'.repeat(64 - 'dashboard:Map_View:'.length)}`,
+        'dashboard',
+        'dashboard',
+      ]);
+      expect(entries[2].context).toEqual({
+        a: { b: { c: { d: { e: '[Object]' } } } },
+        list: [[[['[Array]']]]],
+      });
+    });
+
+    it('lets children follow the parent level until their own level is set', () => {
+      const { entries, logger } = setup();
+      const child = logger.child('map');
+      const grandChild = child.child('layer');
+
+      logger.level = 'debug';
+      child.debug('child debug');
+      grandChild.debug('grandchild debug');
+
+      logger.level = 'error';
+      child.info('child info, hidden');
+      expect(child.level).toBe('error');
+
+      child.level = 'trace';
+      logger.level = 'fatal';
+      grandChild.trace('grandchild trace, follows the child');
+
+      expect(entries.map((entry) => entry.msg)).toEqual([
+        'child debug',
+        'grandchild debug',
+        'grandchild trace, follows the child',
+      ]);
     });
 
     it('lets children have their own level', () => {

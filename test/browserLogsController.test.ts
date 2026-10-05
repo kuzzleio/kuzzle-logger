@@ -1,4 +1,11 @@
-import { describe, expect, it } from 'vitest';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+
+import { pino } from 'pino';
+import { describe, expect, it, vi } from 'vitest';
+
+import { KuzzleLogger } from '../src/KuzzleLogger';
 
 import {
   BrowserLogsRequest,
@@ -152,6 +159,74 @@ describe('createBrowserLogsController', () => {
     expect(lines[0]).not.toHaveProperty('clientNamespace');
   });
 
+  it('only gives namespace slots to allowed namespaces (array)', async () => {
+    const { lines, push } = setup({ allowedNamespaces: ['vue', 'MapView_vue'] });
+
+    await push(
+      request({
+        entries: ['junk-1', 'vue', 'MapView.vue', 'junk-2'].map((namespace) => ({
+          level: 'info',
+          namespace,
+        })),
+        version: 1,
+      }),
+    );
+
+    expect(lines.map(({ namespace }) => namespace)).toEqual([
+      'kuzzle:app:browser',
+      'kuzzle:app:browser:vue',
+      'kuzzle:app:browser:MapView_vue',
+      'kuzzle:app:browser',
+    ]);
+    expect(lines.map(({ clientNamespace }) => clientNamespace)).toEqual([
+      'junk-1',
+      undefined,
+      undefined,
+      'junk-2',
+    ]);
+  });
+
+  it('only gives namespace slots to allowed namespaces (predicate, normalized)', async () => {
+    const seen: string[] = [];
+    const { lines, push } = setup({
+      allowedNamespaces: (namespace) => {
+        seen.push(namespace);
+
+        return namespace.startsWith('map');
+      },
+      maxNamespaces: 1,
+    });
+
+    await push(
+      request({
+        entries: ['map.vue', 'other', 'map:b'].map((namespace) => ({ level: 'info', namespace })),
+        version: 1,
+      }),
+    );
+
+    expect(seen).toContain('map_vue');
+    // maxNamespaces still applies to allowed namespaces
+    expect(lines.map(({ namespace }) => namespace)).toEqual([
+      'kuzzle:app:browser:map_vue',
+      'kuzzle:app:browser',
+      'kuzzle:app:browser',
+    ]);
+    expect(lines[2].clientNamespace).toBe('map:b');
+  });
+
+  it('treats a throwing allowedNamespaces predicate as not allowed', async () => {
+    const { lines, push } = setup({
+      allowedNamespaces: () => {
+        throw new Error('bug');
+      },
+    });
+
+    expect(
+      await push(request({ entries: [{ level: 'info', namespace: 'a' }], version: 1 })),
+    ).toEqual({ accepted: 1, rejected: [] });
+    expect(lines[0]).toMatchObject({ clientNamespace: 'a', namespace: 'kuzzle:app:browser' });
+  });
+
   it('never lets the client override server-side fields', async () => {
     const { lines, push } = setup();
 
@@ -176,6 +251,27 @@ describe('createBrowserLogsController', () => {
       nodeId: 'node-1',
       source: 'browser',
       userId: 'user-1',
+    });
+  });
+
+  it('keeps level, namespace and time with a denylist naming them', async () => {
+    const { lines, push } = setup({ sanitize: { denylist: ['level', 'name', 'time'] } });
+
+    const result = await push(
+      request({
+        entries: [
+          { context: { name: 'Alice' }, level: 'warn', msg: 'm', namespace: 'map', time: 1 },
+        ],
+        version: 1,
+      }),
+    );
+
+    expect(result).toEqual({ accepted: 1, rejected: [] });
+    expect(lines[0]).toMatchObject({
+      clientTime: 1,
+      context: { name: '[REDACTED]' },
+      level: 40,
+      namespace: 'kuzzle:app:browser:map',
     });
   });
 
@@ -250,9 +346,18 @@ describe('createBrowserLogsController', () => {
     expect(lines[0]).toMatchObject({
       dropped: 7,
       level: 40,
-      msg: 'Browser dropped 7 log entries (buffer overflow)',
+      msg: 'Browser lost 7 log entries (buffer full or failed sends)',
       namespace: 'kuzzle:app:browser',
     });
+  });
+
+  it('does not log the dropped warning when the warn level is not accepted', async () => {
+    const { lines, push } = setup({ limits: { levels: ['error', 'fatal'] } });
+
+    await push(request({ dropped: 7, entries: [{ level: 'error', msg: 'boom' }], version: 1 }));
+
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).not.toHaveProperty('dropped');
   });
 
   it('applies batch limits', async () => {
@@ -316,5 +421,84 @@ describe('createBrowserLogsController', () => {
         { index: 2, reason: 'forwarding failed' },
       ],
     });
+  });
+});
+
+describe('createBrowserLogsController with a KuzzleLogger and a pino transport', () => {
+  it('writes enriched, sanitized entries through the transport', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'kuzzle-logger-'));
+    const file = join(dir, 'logs.ndjson');
+    const logger = new KuzzleLogger({
+      getMergingObject: () => ({ namespace: 'kuzzle:app' }),
+      level: 'debug',
+      transport: { options: { destination: file }, target: 'pino/file' },
+    });
+
+    try {
+      const controller = createBrowserLogsController(logger, {
+        allowedNamespaces: ['map'],
+        limits: { maxMessageLength: 100 },
+      });
+
+      const result = await controller.actions.push.handler(
+        request(
+          {
+            dropped: 2,
+            entries: [
+              { context: { token: 'secret' }, level: 'info', msg: 'loaded', namespace: 'map' },
+              {
+                err: { message: 'boom', name: 'TypeError', stack: 'TypeError: boom' },
+                level: 'error',
+                namespace: 'junk',
+              },
+              { level: 'debug', msg: 'x'.repeat(500) },
+              { level: 'trace', msg: 'filtered by the logger level' },
+            ],
+            version: 1,
+          },
+          { headers: { 'user-agent': 'Mozilla/5.0' } },
+        ),
+      );
+
+      expect(result).toEqual({ accepted: 4, rejected: [] });
+
+      const read = () =>
+        readFileSync(file, 'utf8')
+          .split('\n')
+          .filter(Boolean)
+          .map((line) => JSON.parse(line));
+      let lines: Record<string, any>[] = [];
+
+      await vi.waitFor(
+        () => {
+          lines = read();
+          expect(lines).toHaveLength(4);
+        },
+        { timeout: 5000 },
+      );
+
+      expect(lines[0]).toMatchObject({
+        context: { token: '[REDACTED]' },
+        level: 30,
+        msg: 'loaded',
+        namespace: 'kuzzle:app:browser:map',
+        source: 'browser',
+        userAgent: 'Mozilla/5.0',
+        userId: 'user-1',
+      });
+      expect(lines[0].fingerprint).toEqual(expect.any(String));
+      expect(lines[1]).toMatchObject({
+        clientNamespace: 'junk',
+        err: { message: 'boom', name: 'TypeError' },
+        level: 50,
+        msg: 'boom',
+        namespace: 'kuzzle:app:browser',
+      });
+      expect(lines[2].msg).toHaveLength(100);
+      expect(lines[3]).toMatchObject({ dropped: 2, level: 40 });
+    } finally {
+      (logger.pino as unknown as Record<symbol, { end(): void }>)[pino.symbols.streamSym].end();
+      rmSync(dir, { force: true, recursive: true });
+    }
   });
 });

@@ -11,15 +11,32 @@ import { KuzzleLoggerConfig } from './types/KuzzleLoggerConfig';
 export class KuzzleLogger {
   private _pino: Logger;
 
+  /**
+   * Set on children: their level follows the parent one until it is set on the child.
+   */
+  private parent: KuzzleLogger | null = null;
+
+  private ownLevel: string | null = null;
+
   get level(): typeof this._pino.level {
+    if (this.parent) {
+      return this.ownLevel ?? this.parent.level;
+    }
+
     return this._pino.level;
   }
 
   set level(level: typeof this._pino.level) {
+    if (this.parent) {
+      this.ownLevel = level;
+    }
+
     this._pino.level = level;
   }
 
   get pino(): Logger {
+    this.syncLevel();
+
     return this._pino;
   }
 
@@ -138,7 +155,9 @@ export class KuzzleLogger {
       this._pino.flush((err) => {
         if (err) {
           reject(err);
+          return;
         }
+
         resolve();
       });
     });
@@ -147,7 +166,8 @@ export class KuzzleLogger {
   /**
    * Creates a child logger with the given namespace, appended to the parent's one.
    * The parent's merging object is resolved on each log call, so per-call context
-   * (e.g. a requestId from AsyncLocalStorage) is kept.
+   * (e.g. a requestId from AsyncLocalStorage) is kept. The child level follows the
+   * parent one, until it is set on the child.
    */
   child(namespace: string): KuzzleLogger {
     const childLogger = new KuzzleLogger({
@@ -165,6 +185,7 @@ export class KuzzleLogger {
     });
 
     childLogger.pino = this.pino.child({});
+    childLogger.parent = this;
 
     return childLogger;
   }
@@ -173,6 +194,8 @@ export class KuzzleLogger {
    * Shared implementation of the level methods.
    */
   private log(level: pino.Level, objOrMsg: any, args: any[]): void {
+    this.syncLevel();
+
     if (typeof objOrMsg === 'object') {
       const [additionalData, message] = this.toLogObject(objOrMsg, args.shift());
       this._pino[level](additionalData, message, ...args);
@@ -180,6 +203,19 @@ export class KuzzleLogger {
     }
 
     this._pino[level](this.getMergingObject(), objOrMsg, ...args);
+  }
+
+  /**
+   * pino children copy the parent level when they are created: apply the current one.
+   */
+  private syncLevel(): void {
+    if (this.parent) {
+      const level = this.level;
+
+      if (this._pino.level !== level) {
+        this._pino.level = level;
+      }
+    }
   }
 
   /**
