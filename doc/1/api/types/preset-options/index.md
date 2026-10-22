@@ -58,7 +58,10 @@ interface LokiPresetOptions extends BasePresetOptions {
     headers?: Record<string, string>;
     batching?: boolean; // Defaults to true
     interval?: number; // In seconds. Defaults to 1
+    maxBufferSize?: number; // pino-loki 3 only. Defaults to 10000
     levelMap?: Record<number, string>;
+    structuredMetaKey?: string | false; // Defaults to false
+    timeout?: number; // In milliseconds. Defaults to pino-loki's (30000)
   };
 }
 ```
