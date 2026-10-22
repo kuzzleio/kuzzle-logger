@@ -1,3 +1,9 @@
+## [1.6.0-beta.4](https://github.com/kuzzleio/kuzzle-logger/compare/v1.6.0-beta.3...v1.6.0-beta.4) (2026-10-22)
+
+### Features
+
+* **presets:** support pino-loki 3 and pino-elasticsearch 9 ([b5d912d](https://github.com/kuzzleio/kuzzle-logger/commit/b5d912d7e67c76a2ec3240beb65ffe0618fe623d)), closes [#77](https://github.com/kuzzleio/kuzzle-logger/issues/77)
+
 ## [1.6.0-beta.3](https://github.com/kuzzleio/kuzzle-logger/compare/v1.6.0-beta.2...v1.6.0-beta.3) (2026-10-05)
 
 ### Features
