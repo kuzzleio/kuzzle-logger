@@ -103,13 +103,23 @@ export abstract class Presets {
       case 'loki': {
         this.assertRequiredOption(transport, 'host');
 
+        const { maxBufferSize, structuredMetaKey, timeout } = transport.presetOptions;
+        const interval = transport.presetOptions.interval ?? 1;
+
+        // Options are emitted in a shape read the same way by pino-loki 2 and 3:
+        // pino-loki 3 reads `batching: { interval, maxBufferSize }` and ignores
+        // the top-level `interval`, pino-loki 2 reads the top-level `interval`
+        // and only checks that `batching` is truthy.
         return {
           level: transport.level ?? 'info',
           options: {
-            batching: transport.presetOptions.batching ?? true,
+            batching:
+              transport.presetOptions.batching === false
+                ? false
+                : { interval, ...(maxBufferSize !== undefined ? { maxBufferSize } : {}) },
             headers: transport.presetOptions.headers ?? {},
             host: transport.presetOptions.host,
-            interval: transport.presetOptions.interval ?? 1,
+            interval,
             labels: {
               ...(globalSettings.serviceName !== undefined
                 ? { service_name: globalSettings.serviceName }
@@ -125,6 +135,10 @@ export abstract class Presets {
               60: 'fatal',
             },
             propsToLabels: transport.presetOptions.propsToLabels ?? [],
+            // pino-loki 3 sends the `meta` property as structured metadata by
+            // default, pino-loki 2 does not
+            structuredMetaKey: structuredMetaKey ?? false,
+            ...(timeout !== undefined ? { timeout } : {}),
           },
           target: 'pino-loki',
         };

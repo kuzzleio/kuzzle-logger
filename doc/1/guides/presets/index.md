@@ -21,12 +21,12 @@ const logger = new KuzzleLogger({
 });
 ```
 
-| Preset                 | Writes to                   | Requires                                   |
-| ---------------------- | --------------------------- | ------------------------------------------ |
-| `stdout` (default)     | Standard output             | `pino-pretty` in development               |
-| `file`                 | A file or a file descriptor | –                                          |
-| `loki`                 | Grafana Loki                | `pino-loki`                                |
-| `kuzzle-elasticsearch` | Elasticsearch, in ECS       | `pino-elasticsearch`, `pino-transport-ecs` |
+| Preset                 | Writes to                   | Requires                                          |
+| ---------------------- | --------------------------- | ------------------------------------------------- |
+| `stdout` (default)     | Standard output             | `pino-pretty` in development                      |
+| `file`                 | A file or a file descriptor | –                                                 |
+| `loki`                 | Grafana Loki                | `pino-loki` 2.5+ or 3                             |
+| `kuzzle-elasticsearch` | Elasticsearch, in ECS       | `pino-elasticsearch` 8 or 9, `pino-transport-ecs` |
 
 The transport packages are optional peer dependencies: install the ones your presets use. Every preset accepts a `level` (`info` by default). `loki`, `file` and `kuzzle-elasticsearch` throw an explicit error when their required option is missing.
 
@@ -75,15 +75,20 @@ transport: {
 }
 ```
 
-| Option          | Default                         | Description                                                                                                       |
-| --------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `host`          | –                               | Required. Loki URL.                                                                                               |
-| `labels`        | –                               | Labels added to every stream. `service_name` is set from `serviceName`, unless `labels.service_name` is provided. |
-| `propsToLabels` | –                               | Entry fields used as labels, e.g. `['namespace']`. Only use fields with few distinct values.                      |
-| `headers`       | –                               | HTTP headers of the requests, e.g. `{ Authorization: 'Bearer ...' }`.                                             |
-| `batching`      | `true`                          | Sends entries in batches.                                                                                         |
-| `interval`      | `1`                             | Batching interval, in seconds.                                                                                    |
-| `levelMap`      | Pino levels, `warn` → `warning` | Mapping of Pino numeric levels to Loki level names.                                                               |
+| Option              | Default                         | Description                                                                                                       |
+| ------------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `host`              | –                               | Required. Loki URL.                                                                                               |
+| `labels`            | –                               | Labels added to every stream. `service_name` is set from `serviceName`, unless `labels.service_name` is provided. |
+| `propsToLabels`     | –                               | Entry fields used as labels, e.g. `['namespace']`. Only use fields with few distinct values.                      |
+| `headers`           | –                               | HTTP headers of the requests, e.g. `{ Authorization: 'Bearer ...' }`.                                             |
+| `batching`          | `true`                          | Sends entries in batches.                                                                                         |
+| `interval`          | `1`                             | Batching interval, in seconds.                                                                                    |
+| `maxBufferSize`     | `10000` (pino-loki 3)           | Maximum number of buffered entries while Loki is unreachable; the oldest are dropped. Ignored by pino-loki 2.     |
+| `levelMap`          | Pino levels, `warn` → `warning` | Mapping of Pino numeric levels to Loki level names.                                                               |
+| `structuredMetaKey` | `false`                         | Entry field sent as Loki structured metadata, e.g. `'meta'`. Disabled by default, including with pino-loki 3.     |
+| `timeout`           | `30000` (pino-loki default)     | Timeout of the requests to Loki, in milliseconds.                                                                 |
+
+The preset gives the same result with pino-loki 2 and 3: it passes `interval` and `maxBufferSize` in the `batching` object read by pino-loki 3, and keeps the top-level `interval` read by pino-loki 2.
 
 See [Grafana dashboards](/modules/logger/1/guides/grafana-dashboards) for queries and a ready-made dashboard.
 
