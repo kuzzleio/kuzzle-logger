@@ -32,7 +32,10 @@ export interface LokiPresetOptions<TransportOptions = Record<string, any>>
     interval?: number;
     labels?: Record<string, string>;
     levelMap?: Record<number, string>;
+    maxBufferSize?: number;
     propsToLabels?: string[];
+    structuredMetaKey?: string | false;
+    timeout?: number;
   };
 }
 

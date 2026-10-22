@@ -104,7 +104,7 @@ describe('Presets.expandPresets', () => {
       ).toEqual({
         level: 'info',
         options: {
-          batching: true,
+          batching: { interval: 1 },
           headers: {},
           host: 'http://loki:3100',
           interval: 1,
@@ -118,6 +118,7 @@ describe('Presets.expandPresets', () => {
             60: 'fatal',
           },
           propsToLabels: [],
+          structuredMetaKey: false,
         },
         target: 'pino-loki',
       });
@@ -151,9 +152,42 @@ describe('Presets.expandPresets', () => {
           labels: { app: 'my-app', service_name: 'my-service' },
           levelMap: { 30: 'INFO' },
           propsToLabels: ['nodeId', 'namespace'],
+          structuredMetaKey: false,
         },
         target: 'pino-loki',
       });
+    });
+
+    it('passes the pino-loki 3 options', () => {
+      const config = Presets.expandPresets(
+        {
+          preset: 'loki',
+          presetOptions: {
+            host: 'http://loki:3100',
+            interval: 5,
+            maxBufferSize: 500,
+            structuredMetaKey: 'meta',
+            timeout: 2000,
+          },
+        },
+        {},
+      );
+
+      expect((config as any).options).toMatchObject({
+        batching: { interval: 5, maxBufferSize: 500 },
+        interval: 5,
+        structuredMetaKey: 'meta',
+        timeout: 2000,
+      });
+    });
+
+    it('does not set a timeout by default', () => {
+      const config = Presets.expandPresets(
+        { preset: 'loki', presetOptions: { host: 'http://loki:3100' } },
+        {},
+      );
+
+      expect((config as any).options).not.toHaveProperty('timeout');
     });
   });
 
